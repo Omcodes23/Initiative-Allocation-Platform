@@ -1,0 +1,732 @@
+{% extends "base.html" %}
+
+{% block title %}User Status View - Operation Excellence{% endblock %}
+{% block page_title %}User Status Overview{% endblock %}
+
+{% block content %}
+<!-- Filters -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-4">
+                        <label for="userFilter" class="form-label">Filter by User</label>
+                        <select class="form-select filter-select" id="userFilter" data-filter="user">
+                            <option value="">All Users</option>
+                            {% for user in all_users %}
+                            <option value="{{ user._id }}" {% if selected_user == user._id|string %}selected{% endif %}>{{ user.name }} ({{ user.email }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="eventFilter" class="form-label">Filter by Initiative</label>
+                        <select class="form-select filter-select" id="eventFilter" data-filter="event">
+                            <option value="">All Initiatives</option>
+                            {% for event in all_events %}
+                            <option value="{{ event._id }}" {% if selected_event == event._id|string %}selected{% endif %}>{{ event.title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="statusFilter" class="form-label">Filter by Status</label>
+                        <select class="form-select filter-select" id="statusFilter" data-filter="status">
+                            <option value="">All Statuses</option>
+                            {% for status in all_statuses %}
+                            <option value="{{ status }}" {% if selected_status == status %}selected{% endif %}>{{ status|replace('_', ' ')|title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User Status Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-users me-2"></i>User Status Overview</h5>
+            </div>
+            <div class="card-body">
+                {% if users %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>User Details</th>
+                                <th>Initiative</th>
+                                <th>Category</th>
+                                <th>Raised From</th>
+                                <th>Due Date</th>
+                                <th>Status</th>
+                                <th>Documents</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users %}
+                                {% set user_events = [] %}
+                                {% for event in events %}
+                                    {% if user.email in event.assigned_users %}
+                                        {% set _ = user_events.append(event) %}
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if user_events %}
+                                    {% for event in user_events %}
+                                    <tr class="status-row" data-user-id="{{ user._id }}" data-event-id="{{ event._id }}">
+                                        <td>
+                                            <div>
+                                                <strong>{{ user.name }}</strong><br>
+                                                <small class="text-muted">{{ user.email }}</small><br>
+                                                <small class="text-muted">{{ user.designation if user.designation else 'N/A' }}</small>
+                                                {% if user.temp_password %}
+                                                <br><span class="badge bg-warning">Temporary Password</span>
+                                                {% else %}
+                                                <br><span class="badge bg-success">Active</span>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div>
+                                                <strong>{{ event.title }}</strong><br>
+                                                <small class="text-muted">{{ event.description[:50] }}{% if event.description|length > 50 %}...{% endif %}</small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-light text-dark">{{ event.category|title if event.category else 'N/A' }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-light text-dark">{{ event.raised_from|title if event.raised_from else 'N/A' }}</span>
+                                        </td>
+                                        <td>
+                                            {% if event.revised_due_date %}
+                                                {% set effective_due_date = event.revised_due_date %}
+                                                {% set is_revised = true %}
+                                            {% elif event.due_date %}
+                                                {% set effective_due_date = event.due_date %}
+                                                {% set is_revised = false %}
+                                            {% else %}
+                                                {% set effective_due_date = none %}
+                                                {% set is_revised = false %}
+                                            {% endif %}
+                                            
+                                            {% if effective_due_date %}
+                                                {% if effective_due_date.date() < today %}
+                                                    <span class="text-danger">
+                                                        {{ effective_due_date.strftime('%Y-%m-%d') }}
+                                                        {% if is_revised %}<br><small class="text-warning">(Revised)</small>{% endif %}
+                                                    </span>
+                                                {% else %}
+                                                    {{ effective_due_date.strftime('%Y-%m-%d') }}
+                                                    {% if is_revised %}<br><small class="text-warning">(Revised)</small>{% endif %}
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="text-muted">N/A</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                                                                    {% if event.status == 'pending' %}
+                                        <span class="badge bg-warning">Pending</span>
+                                        {% elif event.status == 'in_progress' %}
+                                        <span class="badge bg-info">Work in Progress</span>
+                                        {% elif event.status == 'delay' %}
+                                        <span class="badge bg-danger">Delay</span>
+                                        {% elif event.status == 'completed' %}
+                                        <span class="badge bg-success">Complete</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">{{ event.status|title }}</span>
+                                        {% endif %}
+                                            {% if event.reason %}
+                                            <br><small class="text-muted">{{ event.reason[:30] }}{% if event.reason|length > 30 %}...{% endif %}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if event.document_path %}
+                                                {% set filename = event.document_path.split('/')[-1] %}
+                                                <a href="{{ url_for('download_file', filename=filename) }}" target="_blank" class="btn btn-sm btn-outline-primary" title="View Document">
+                                                    <i class="fas fa-file me-1"></i>{{ filename[:15] }}{% if filename|length > 15 %}...{% endif %}
+                                                </a>
+                                            {% else %}
+                                                <span class="text-muted">No document</span>
+                                            {% endif %}
+                                            {% if event.progress_file %}
+                                            <br>
+                                            {% set filename = event.progress_file.split('/')[-1] %}
+                                            <a href="{{ url_for('download_file', filename=filename) }}" target="_blank" class="btn btn-sm btn-outline-info mt-1" title="View Progress Document">
+                                                <i class="fas fa-file-alt me-1"></i>{{ filename[:15] }}{% if filename|length > 15 %}...{% endif %}
+                                            </a>
+                                            {% endif %}
+                                            {% if event.completion_file %}
+                                            <br>
+                                            {% set filename = event.completion_file.split('/')[-1] %}
+                                            <a href="{{ url_for('download_file', filename=filename) }}" target="_blank" class="btn btn-sm btn-outline-success mt-1" title="View Completion File">
+                                                <i class="fas fa-file-check me-1"></i>{{ filename[:15] }}{% if filename|length > 15 %}...{% endif %}
+                                            </a>
+                                            {% endif %}
+                                            {% if event.status_history %}
+                                            <br>
+                                            <button class="btn btn-secondary btn-sm view-history-btn mt-2" data-event-id="{{ event._id }}">
+                                                <i class="fas fa-history me-1"></i>View History
+                                            </button>
+                                            {% endif %}
+                                        </td>
+
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr class="status-row" data-user-id="{{ user._id }}">
+                                        <td>
+                                            <div>
+                                                <strong>{{ user.name }}</strong><br>
+                                                <small class="text-muted">{{ user.email }}</small><br>
+                                                <small class="text-muted">{{ user.designation if user.designation else 'N/A' }}</small>
+                                                {% if user.temp_password %}
+                                                <br><span class="badge bg-warning">Temporary Password</span>
+                                                {% else %}
+                                                <br><span class="badge bg-success">Active</span>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td colspan="7" class="text-center text-muted">
+                                            <i class="fas fa-inbox me-2"></i>No initiatives assigned
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No users found</h5>
+                    <p class="text-muted">Create users to see their status information.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User Detail Modal - Ultra-Stable System -->
+{% for user in users %}
+<div class="ultra-modal" id="userDetailModal{{ user._id }}">
+    <div class="ultra-modal-content">
+        <div class="ultra-modal-header">
+            <h5 class="ultra-modal-title">User Details - {{ user.name }}</h5>
+            <button type="button" class="ultra-modal-close" data-user-id="{{ user._id }}">&times;</button>
+        </div>
+        <div class="ultra-modal-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>User Information</h6>
+                    <p><strong>Name:</strong> {{ user.name }}</p>
+                    <p><strong>Email:</strong> {{ user.email }}</p>
+                    <p><strong>Phone:</strong> {{ user.phone if user.phone else 'N/A' }}</p>
+                    <p><strong>Designation:</strong> {{ user.designation if user.designation else 'N/A' }}</p>
+                    <p><strong>Status:</strong> 
+                        {% if user.temp_password %}
+                        <span class="badge bg-warning">Temporary Password</span>
+                        {% else %}
+                        <span class="badge bg-success">Active</span>
+                        {% endif %}
+                    </p>
+                    <p><strong>Created:</strong> {{ user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else 'N/A' }}</p>
+                </div>
+                <div class="col-md-6">
+                    <h6>Assigned Initiatives</h6>
+                    {% set user_events = [] %}
+                    {% for event in events %}
+                        {% if user.email in event.assigned_users %}
+                            {% set _ = user_events.append(event) %}
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if user_events %}
+                        {% for event in user_events %}
+                        <div class="card mb-2">
+                            <div class="card-body">
+                                <h6>{{ event.title }}</h6>
+                                <p class="mb-1">{{ event.description[:100] }}{% if event.description|length > 100 %}...{% endif %}</p>
+                                <div class="row mb-1">
+                                    <div class="col-md-6">
+                                        <small><strong>Category:</strong> {{ event.category|title if event.category else 'N/A' }}</small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <small><strong>Raised From:</strong> {{ event.raised_from|title if event.raised_from else 'N/A' }}</small>
+                                    </div>
+                                </div>
+                                <p class="mb-1">
+                                    <small><strong>Due:</strong> 
+                                        {% if event.revised_due_date %}
+                                            {{ event.revised_due_date.strftime('%Y-%m-%d') }} <span class="text-warning">(Revised)</span>
+                                        {% elif event.due_date %}
+                                            {{ event.due_date.strftime('%Y-%m-%d') }}
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </small>
+                                </p>
+                                <p class="mb-1">
+                                    <small><strong>Status:</strong> 
+                                        {% if event.status == 'pending' %}
+                                        <span class="badge bg-warning">Pending</span>
+                                        {% elif event.status == 'in_progress' %}
+                                        <span class="badge bg-info">Work in Progress</span>
+                                        {% elif event.status == 'delay' %}
+                                        <span class="badge bg-danger">Delay</span>
+                                        {% elif event.status == 'completed' %}
+                                        <span class="badge bg-success">Complete</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">{{ event.status|title }}</span>
+                                        {% endif %}
+                                    </small>
+                                </p>
+                                {% if event.reason %}
+                                <p class="mb-1"><small><strong>Reason:</strong> {{ event.reason }}</small></p>
+                                {% endif %}
+
+                                {% if event.completion_file %}
+                                <p class="mb-0"><small><strong>Completion File:</strong> 
+                                    {% set filename = event.completion_file.split('/')[-1] %}
+                                    <a href="{{ url_for('download_file', filename=filename) }}" target="_blank">
+                                        <i class="fas fa-download"></i> {{ filename }}
+                                    </a>
+                                </small></p>
+                                {% endif %}
+                                {% if event.status_history and event.status_history|length > 1 %}
+                                <p class="mb-0"><small class="text-info"><strong>Status Changes:</strong> {{ event.status_history|length }} times</small></p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">No initiatives assigned</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="row mt-3">
+                <div class="col-12">
+                    <h6>Recent Remarks</h6>
+                    {% set user_remarks = [] %}
+                    {% for remark in remarks %}
+                        {% if remark.user_email == user.email %}
+                            {% set _ = user_remarks.append(remark) %}
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if user_remarks %}
+                        {% for remark in user_remarks %}
+                        <div class="card mb-2">
+                            <div class="card-body">
+                                <p class="mb-1">{{ remark.remark }}</p>
+                                <p class="mb-1"><small class="text-muted">{{ remark.created_at.strftime('%Y-%m-%d %H:%M') if remark.created_at else 'N/A' }}</small></p>
+                                {% if remark.file_path %}
+                                <p class="mb-0"><small>
+                                    {% set filename = remark.file_path.split('/')[-1] %}
+                                    <a href="{{ url_for('download_file', filename=filename) }}" target="_blank">
+                                        <i class="fas fa-paperclip"></i> {{ filename }}
+                                    </a>
+                                </small></p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">No remarks found</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="ultra-modal-footer">
+            <button type="button" class="btn btn-secondary ultra-modal-close" data-user-id="{{ user._id }}">Close</button>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- Reason View Modal -->
+<div class="ultra-modal" id="reasonModal">
+    <div class="ultra-modal-content">
+        <div class="ultra-modal-header">
+            <h5 class="ultra-modal-title">Status Change Details</h5>
+            <button type="button" class="ultra-modal-close" data-modal-id="reasonModal">&times;</button>
+        </div>
+        <div class="ultra-modal-body">
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <strong>Date:</strong> <span id="reasonDate"></span>
+                </div>
+                <div class="col-md-6">
+                    <strong>Status:</strong> <span id="reasonStatus"></span>
+                </div>
+            </div>
+            <div class="mb-3">
+                <strong>Details:</strong>
+                <div class="mt-2 p-3 bg-light rounded" id="reasonText"></div>
+            </div>
+        </div>
+        <div class="ultra-modal-footer">
+            <button type="button" class="btn btn-secondary ultra-modal-close" data-modal-id="reasonModal">Close</button>
+        </div>
+    </div>
+</div>
+
+{% for event in events %}
+{% if event.status_history %}
+<div class="ultra-modal" id="historyModal{{ event._id }}">
+    <div class="ultra-modal-content">
+        <div class="ultra-modal-header">
+            <h5 class="ultra-modal-title">Status History - {{ event.title }}</h5>
+            <button type="button" class="ultra-modal-close" data-event-id="{{ event._id }}">&times;</button>
+        </div>
+        <div class="ultra-modal-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Status</th>
+                            <th>Changed By</th>
+                            <th>Reason</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for history in event.status_history|sort(attribute='changed_at', reverse=true) %}
+                        <tr>
+                            <td>{{ history.changed_at.strftime('%Y-%m-%d %H:%M') if history.changed_at else 'N/A' }}</td>
+                            <td>
+                                {% if history.status == 'pending' %}
+                                <span class="badge bg-warning">Pending</span>
+                                {% elif history.status == 'in_progress' %}
+                                <span class="badge bg-info">In Progress</span>
+                                {% elif history.status == 'delay' %}
+                                <span class="badge bg-danger">Delay</span>
+                                {% elif history.status == 'completed' %}
+                                <span class="badge bg-success">Completed</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ history.status|title }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ history.changed_by_name if history.changed_by_name else 'System' }}</td>
+                            <td>
+                                {% if history.reason or history.completion_remarks %}
+                                    <button class="btn btn-sm btn-outline-info view-reason-btn" 
+                                            data-reason="{{ history.reason if history.reason else history.completion_remarks }}" 
+                                            data-status="{{ history.status }}"
+                                            data-date="{{ history.changed_at.strftime('%Y-%m-%d %H:%M') if history.changed_at else 'N/A' }}">
+                                        <i class="fas fa-eye me-1"></i>View Reason
+                                    </button>
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if history.revised_due_date %}
+                                <small class="text-warning">Due: {{ history.revised_due_date.strftime('%Y-%m-%d') }}</small><br>
+                                {% endif %}
+                                {% if history.progress_file %}
+                                <a href="{{ url_for('download_file', filename=history.progress_file.split('/')[-1]) }}" target="_blank" class="btn btn-sm btn-outline-info mt-1" title="View Progress Document">
+                                    <i class="fas fa-file-alt me-1"></i>Progress File
+                                </a><br>
+                                {% endif %}
+                                {% if history.completion_file %}
+                                <a href="{{ url_for('download_file', filename=history.completion_file.split('/')[-1]) }}" target="_blank" class="btn btn-sm btn-outline-success mt-1" title="View Completion File">
+                                    <i class="fas fa-file-check me-1"></i>Completion File
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="ultra-modal-footer">
+            <button type="button" class="btn btn-secondary ultra-modal-close" data-event-id="{{ event._id }}">Close</button>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endfor %}
+
+<style>
+/* Ultra-Stable Modal Styles */
+.ultra-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 999999;
+}
+
+/* Special styling for reason modal to ensure it's always on top */
+#reasonModal {
+    z-index: 99999999 !important;
+}
+
+.ultra-modal.show {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ultra-modal-content {
+    background: white;
+    border-radius: 8px;
+    max-width: 90%;
+    max-height: 90%;
+    width: 800px;
+    display: flex;
+    flex-direction: column;
+}
+
+.ultra-modal-header {
+    padding: 1rem;
+    border-bottom: 1px solid #dee2e6;
+    display: flex;
+    justify-content: between;
+    align-items: center;
+}
+
+.ultra-modal-title {
+    margin: 0;
+    flex-grow: 1;
+}
+
+.ultra-modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ultra-modal-body {
+    padding: 1rem;
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+.ultra-modal-footer {
+    padding: 1rem;
+    border-top: 1px solid #dee2e6;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+.ultra-modal-open {
+    overflow: hidden;
+}
+
+.status-row:hover {
+    background-color: #f8f9fa;
+}
+</style>
+
+<script>
+// Real-time filtering functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const filterSelects = document.querySelectorAll('.filter-select');
+    const statusRows = document.querySelectorAll('.status-row');
+    
+    function applyFilters() {
+        const userFilter = document.getElementById('userFilter').value;
+        const eventFilter = document.getElementById('eventFilter').value;
+        const statusFilter = document.getElementById('statusFilter').value;
+        
+        statusRows.forEach(row => {
+            let showRow = true;
+            const userId = row.getAttribute('data-user-id');
+            const eventId = row.getAttribute('data-event-id');
+            
+            // User filter
+            if (userFilter && userId !== userFilter) {
+                showRow = false;
+            }
+            
+            // Event filter
+            if (eventFilter && eventId !== eventFilter) {
+                showRow = false;
+            }
+            
+            // Status filter
+            if (statusFilter && showRow) {
+                const statusBadges = row.querySelectorAll('.badge');
+                let hasStatus = false;
+                statusBadges.forEach(badge => {
+                    if (badge.textContent.toLowerCase().includes(statusFilter.toLowerCase().replace('_', ' '))) {
+                        hasStatus = true;
+                    }
+                });
+                if (!hasStatus) {
+                    showRow = false;
+                }
+            }
+            
+            // Show/hide row
+            row.style.display = showRow ? '' : 'none';
+        });
+    }
+    
+    // Apply filters on change
+    filterSelects.forEach(select => {
+        select.addEventListener('change', applyFilters);
+    });
+    
+    // Ultra-Stable Modal System
+    function showModal(modalId) {
+        console.log('showModal called with:', modalId);
+        const modal = document.getElementById(modalId);
+        if (!modal) {
+            console.error('Modal not found:', modalId);
+            return;
+        }
+        
+        console.log('Modal found, showing...');
+        
+        // Move modal to document body if it's not already there
+        if (modal.parentElement !== document.body) {
+            document.body.appendChild(modal);
+        }
+        
+        // Disable pointer events on everything except modal
+        document.body.classList.add('ultra-modal-open');
+        
+        // Force specific positioning to break out of parent constraints
+        modal.style.position = 'fixed';
+        modal.style.top = '0';
+        modal.style.left = '0';
+        modal.style.right = '0';
+        modal.style.bottom = '0';
+        modal.style.width = '100vw';
+        modal.style.height = '100vh';
+        modal.style.margin = '0';
+        modal.style.padding = '0';
+        modal.style.transform = 'none';
+        // Use much higher z-index for reason modal to appear on top
+        modal.style.zIndex = modalId === 'reasonModal' ? '99999999' : '999999';
+        
+        // Show modal immediately without any transitions
+        modal.classList.add('show');
+        
+        // Force immediate render to prevent flickering
+        modal.offsetHeight;
+        
+        console.log('Modal should be visible now');
+    }
+    
+    function hideModal(modal) {
+        if (!modal) return;
+        
+        // Hide modal immediately
+        modal.classList.remove('show');
+        
+        // Re-enable body interactions
+        document.body.classList.remove('ultra-modal-open');
+    }
+    
+    // Initialize with immediate event binding
+    function init() {
+        // Move all modals to document body to ensure they're not constrained
+        const modals = document.querySelectorAll('.ultra-modal');
+        modals.forEach(modal => {
+            if (modal.parentElement !== document.body) {
+                document.body.appendChild(modal);
+            }
+        });
+        
+        // Single click handler for everything
+        document.addEventListener('click', function(e) {
+            // View details button
+            if (e.target.closest('.view-details-btn')) {
+                e.preventDefault();
+                e.stopPropagation();
+                const userId = e.target.closest('.view-details-btn').getAttribute('data-user-id');
+                if (userId) {
+                    showModal('userDetailModal' + userId);
+                }
+                return false;
+            }
+            // View history button
+            if (e.target.closest('.view-history-btn')) {
+                e.preventDefault();
+                e.stopPropagation();
+                const eventId = e.target.closest('.view-history-btn').getAttribute('data-event-id');
+                if (eventId) {
+                    showModal('historyModal' + eventId);
+                }
+                return false;
+            }
+            
+            // View reason button
+            if (e.target.closest('.view-reason-btn')) {
+                e.preventDefault();
+                e.stopPropagation();
+                const button = e.target.closest('.view-reason-btn');
+                const reason = button.getAttribute('data-reason');
+                const status = button.getAttribute('data-status');
+                const date = button.getAttribute('data-date');
+                
+                console.log('View reason clicked:', { reason, status, date });
+                
+                // Close any open history modals first
+                const openHistoryModals = document.querySelectorAll('.ultra-modal.show');
+                openHistoryModals.forEach(modal => {
+                    if (modal.id !== 'reasonModal') {
+                        hideModal(modal);
+                    }
+                });
+                
+                // Set modal content
+                const reasonDateEl = document.getElementById('reasonDate');
+                const reasonStatusEl = document.getElementById('reasonStatus');
+                const reasonTextEl = document.getElementById('reasonText');
+                
+                if (reasonDateEl) reasonDateEl.textContent = date;
+                if (reasonStatusEl) reasonStatusEl.textContent = status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ');
+                if (reasonTextEl) reasonTextEl.textContent = reason;
+                
+                console.log('Showing reason modal');
+                showModal('reasonModal');
+                return false;
+            }
+            // Close button
+            if (e.target.closest('.ultra-modal-close')) {
+                e.preventDefault();
+                e.stopPropagation();
+                const modal = e.target.closest('.ultra-modal');
+                if (modal) {
+                    hideModal(modal);
+                }
+                return false;
+            }
+            // Backdrop click
+            if (e.target.classList.contains('ultra-modal')) {
+                e.preventDefault();
+                e.stopPropagation();
+                hideModal(e.target);
+                return false;
+            }
+        });
+    }
+    
+    // Initialize immediately
+    init();
+});
+</script>
+{% endblock %} 

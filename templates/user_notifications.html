@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block title %}My Notifications - Operation Excellence{% endblock %}
+{% block page_title %}My Notifications{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-bell me-2"></i>My Notifications</h5>
+                {% if notifications %}
+                <button class="btn btn-sm btn-outline-primary" onclick="markAllAsRead()">
+                    <i class="fas fa-check-double me-1"></i>Mark All as Read
+                </button>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                {% if notifications %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Message</th>
+                                <th>Type</th>
+                                <th>Initiative</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for notification in notifications %}
+                            <tr class="notification-row {% if not notification.read %}table-warning{% endif %}" data-notification-id="{{ notification._id }}">
+                                <td class="notification-message">
+                                    <strong>{{ notification.message }}</strong>
+                                    {% if notification.remark_preview %}
+                                    <br><small class="text-muted">{{ notification.remark_preview }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if notification.type == 'event_assigned' %}
+                                    <span class="badge bg-primary">Initiative Assigned</span>
+                                    {% elif notification.type == 'status_changed' %}
+                                    <span class="badge bg-info">Status Update</span>
+                                    {% elif notification.type == 'overdue_reminder' %}
+                                    <span class="badge bg-danger">Overdue</span>
+                                    {% elif notification.type == 'remark_added' %}
+                                    <span class="badge bg-warning">Remark</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">{{ notification.type|title }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% for event in events %}
+                                        {% if event._id|string == notification.event_id %}
+                                            {{ event.title }}
+                                        {% endif %}
+                                    {% endfor %}
+                                </td>
+                                <td class="notification-time">{{ notification.created_at.strftime('%Y-%m-%d %H:%M') if notification.created_at else 'N/A' }}</td>
+                                <td>
+                                    {% if notification.read %}
+                                    <span class="badge bg-success">Read</span>
+                                    {% else %}
+                                    <span class="badge bg-warning">New</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        {% if not notification.read %}
+                                        <button class="btn btn-sm btn-outline-success" onclick="markAsRead('{{ notification._id }}')">
+                                            <i class="fas fa-check me-1"></i>Mark Read
+                                        </button>
+                                        {% endif %}
+                                        <button class="btn btn-sm btn-outline-danger" onclick="removeNotification('{{ notification._id }}')">
+                                            <i class="fas fa-trash me-1"></i>Remove
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-bell-slash fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No notifications</h5>
+                    <p class="text-muted">You don't have any notifications yet.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Notification Management Functions
+function markAsRead(notificationId) {
+    fetch(`/mark_notification_read/${notificationId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update the notification row
+                const row = document.querySelector(`[data-notification-id="${notificationId}"]`);
+                if (row) {
+                    row.classList.remove('table-warning');
+                    const statusCell = row.querySelector('td:nth-child(5)');
+                    if (statusCell) {
+                        statusCell.innerHTML = '<span class="badge bg-success">Read</span>';
+                    }
+                    const actionCell = row.querySelector('td:nth-child(6)');
+                    if (actionCell) {
+                        actionCell.innerHTML = '<span class="text-muted">-</span>';
+                    }
+                }
+                
+                // Show success message
+                showToast('Notification marked as read', 'success');
+            } else {
+                showToast('Failed to mark notification as read', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('Error marking notification as read', 'error');
+        });
+}
+
+function markAllAsRead() {
+    const unreadNotifications = document.querySelectorAll('.table-warning');
+    if (unreadNotifications.length === 0) {
+        showToast('No unread notifications to mark', 'info');
+        return;
+    }
+    
+    fetch('/mark_all_notifications_read', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update all rows
+            unreadNotifications.forEach(row => {
+                row.classList.remove('table-warning');
+                const statusCell = row.querySelector('td:nth-child(5)');
+                if (statusCell) {
+                    statusCell.innerHTML = '<span class="badge bg-success">Read</span>';
+                }
+                const actionCell = row.querySelector('td:nth-child(6)');
+                if (actionCell) {
+                    actionCell.innerHTML = '<span class="text-muted">-</span>';
+                }
+            });
+            
+            showToast('All notifications marked as read', 'success');
+        } else {
+            showToast('Failed to mark all notifications as read', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Error marking notifications as read', 'error');
+    });
+}
+
+function removeNotification(notificationId) {
+    if (!confirm('Are you sure you want to remove this notification?')) {
+        return;
+    }
+    
+    fetch(`/remove_notification/${notificationId}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Remove the notification row
+            const row = document.querySelector(`[data-notification-id="${notificationId}"]`);
+            if (row) {
+                row.remove();
+                showToast('Notification removed successfully', 'success');
+            }
+        } else {
+            showToast(data.error || 'Failed to remove notification', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Error removing notification', 'error');
+    });
+}
+
+function showToast(message, type = 'info') {
+    // Create toast container if it doesn't exist
+    let toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toast-container';
+        toastContainer.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999;';
+        document.body.appendChild(toastContainer);
+    }
+    
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show`;
+    toast.style.cssText = 'min-width: 300px; margin-bottom: 10px;';
+    toast.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    toastContainer.appendChild(toast);
+    
+    // Auto remove after 3 seconds
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.remove();
+        }
+    }, 3000);
+}
+</script>
+{% endblock %} 

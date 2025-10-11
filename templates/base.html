@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Operation Excellence{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .sidebar .nav-link {
+            color: rgba(255,255,255,0.8);
+            padding: 12px 20px;
+            margin: 5px 0;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        .sidebar .nav-link:hover {
+            color: white;
+            background: rgba(255,255,255,0.1);
+            transform: translateX(5px);
+        }
+        .sidebar .nav-link.active {
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+        .main-content {
+            background: #f8f9fa;
+            min-height: 100vh;
+        }
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            transition: transform 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 8px;
+            padding: 10px 25px;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .navbar-brand {
+            font-weight: bold;
+            color: #667eea !important;
+        }
+        .alert {
+            border-radius: 10px;
+            border: none;
+        }
+        .form-control {
+            border-radius: 8px;
+            border: 1px solid #e1e5e9;
+            padding: 12px 15px;
+        }
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        
+        /* Simple and Reliable Modal System */
+        .custom-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 999999;
+        }
+        
+        .custom-modal.show {
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .custom-modal-content {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            max-width: 90%;
+            max-height: 90%;
+            width: 600px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .custom-modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .custom-modal-title {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .custom-modal-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background-color 0.2s;
+        }
+        
+        .custom-modal-close:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        .custom-modal-body {
+            padding: 20px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+        
+        .custom-modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid #ddd;
+            background-color: #f8f9fa;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        /* Prevent body scroll when modal is open */
+        body.modal-open {
+            overflow: hidden !important;
+        }
+        
+        /* Ensure modal is always on top */
+        .custom-modal {
+            position: fixed !important;
+            z-index: 999999 !important;
+        }
+        
+        /* Override any Bootstrap modal styles */
+        .modal, .modal-backdrop {
+            display: none !important;
+        }
+
+        /* Bulletproof Modal System - Zero Flickering */
+        .stable-modal {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            background: rgba(0, 0, 0, 0.85) !important;
+            z-index: 999999 !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+            transition: opacity 0.15s ease-in-out, visibility 0.15s ease-in-out !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 20px !important;
+            box-sizing: border-box !important;
+        }
+        
+        .stable-modal.active {
+            opacity: 1 !important;
+            visibility: visible !important;
+        }
+        
+        .stable-modal-content {
+            background: #fff !important;
+            border-radius: 12px !important;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4) !important;
+            max-width: 95vw !important;
+            max-height: 95vh !important;
+            width: 700px !important;
+            transform: scale(0.9) !important;
+            transition: transform 0.15s ease-in-out !important;
+            overflow: hidden !important;
+            position: relative !important;
+            display: flex !important;
+            flex-direction: column !important;
+        }
+        
+        .stable-modal.active .stable-modal-content {
+            transform: scale(1) !important;
+        }
+        
+        .stable-modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            color: white !important;
+            padding: 20px 25px !important;
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            flex-shrink: 0 !important;
+        }
+        
+        .stable-modal-title {
+            margin: 0 !important;
+            font-size: 20px !important;
+            font-weight: 600 !important;
+            color: white !important;
+        }
+        
+        .stable-modal-close {
+            background: rgba(255, 255, 255, 0.2) !important;
+            border: none !important;
+            color: white !important;
+            width: 40px !important;
+            height: 40px !important;
+            border-radius: 50% !important;
+            cursor: pointer !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 20px !important;
+            font-weight: bold !important;
+            transition: background-color 0.2s ease !important;
+            flex-shrink: 0 !important;
+        }
+        
+        .stable-modal-close:hover {
+            background: rgba(255, 255, 255, 0.3) !important;
+        }
+        
+        .stable-modal-body {
+            padding: 25px !important;
+            overflow-y: auto !important;
+            flex: 1 !important;
+            max-height: calc(95vh - 160px) !important;
+        }
+        
+        .stable-modal-footer {
+            padding: 20px 25px !important;
+            border-top: 1px solid #e9ecef !important;
+            background-color: #f8f9fa !important;
+            display: flex !important;
+            justify-content: flex-end !important;
+            gap: 15px !important;
+            flex-shrink: 0 !important;
+        }
+        
+        /* Prevent body scroll when modal is open */
+        body.modal-locked {
+            overflow: hidden !important;
+            padding-right: 0 !important;
+        }
+        
+        /* Override any conflicting styles */
+        .stable-modal * {
+            box-sizing: border-box !important;
+        }
+        
+        /* Ensure modal content is properly styled */
+        .stable-modal-body .card {
+            background: white !important;
+            border: 1px solid #e9ecef !important;
+            border-radius: 8px !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+            margin-bottom: 15px !important;
+        }
+        
+        .stable-modal-body .card-body {
+            padding: 15px !important;
+        }
+        
+        .stable-modal-body .table {
+            background: white !important;
+            border-radius: 8px !important;
+            overflow: hidden !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+            margin-bottom: 0 !important;
+        }
+        
+        .stable-modal-body .table th {
+            background: #f8f9fa !important;
+            border-bottom: 2px solid #dee2e6 !important;
+            font-weight: 600 !important;
+            color: #495057 !important;
+        }
+        
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .stable-modal-content {
+                width: 95vw !important;
+                max-height: 90vh !important;
+            }
+            
+            .stable-modal-header {
+                padding: 15px 20px !important;
+            }
+            
+            .stable-modal-title {
+                font-size: 18px !important;
+            }
+            
+            .stable-modal-body {
+                padding: 20px !important;
+            }
+            
+            .stable-modal-footer {
+                padding: 15px 20px !important;
+                flex-direction: column !important;
+            }
+            
+            .stable-modal-footer .btn {
+                width: 100% !important;
+            }
+        }
+        
+        /* Ensure this system overrides everything */
+        .stable-modal {
+            isolation: isolate !important;
+        }
+        
+        /* Hide any Bootstrap modals that might interfere */
+        .modal.fade, .modal-backdrop {
+            display: none !important;
+        }
+
+        /* Notification Styles */
+        .notification-item {
+            transition: background-color 0.2s ease;
+            border-left: 3px solid transparent;
+        }
+        
+        .notification-item:hover {
+            background-color: #f8f9fa;
+            border-left-color: #667eea;
+        }
+        
+        .notification-item.fw-bold {
+            border-left-color: #ffc107;
+        }
+        
+        .notification-row {
+            transition: all 0.2s ease;
+        }
+        
+        .notification-row:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .notification-row.table-warning {
+            background-color: #fff3cd !important;
+            border-left: 4px solid #ffc107;
+        }
+        
+        .notification-message {
+            max-width: 300px;
+            word-wrap: break-word;
+        }
+        
+        .notification-time {
+            white-space: nowrap;
+            color: #6c757d;
+        }
+        
+        /* Toast Container */
+        #toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            pointer-events: none;
+        }
+        
+        #toast-container .alert {
+            pointer-events: auto;
+            margin-bottom: 10px;
+            min-width: 300px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            border: none;
+            border-radius: 8px;
+        }
+        
+        /* Notification Dropdown Enhancements */
+        .dropdown-menu {
+            border: none;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            border-radius: 12px;
+        }
+        
+        .dropdown-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+            border-radius: 12px 12px 0 0;
+        }
+
+        /* Full-Screen Modal System - Breaks Parent Constraints */
+        .ultra-modal {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: rgba(0, 0, 0, 0.85) !important;
+            z-index: 999999 !important;
+            display: none !important;
+            align-items: center !important;
+            justify-content: center !important;
+            box-sizing: border-box !important;
+            pointer-events: none !important;
+            /* Break out of any parent constraints */
+            transform: none !important;
+            clip: none !important;
+            overflow: visible !important;
+        }
+        
+        .ultra-modal.show {
+            display: flex !important;
+            pointer-events: auto !important;
+        }
+        
+        .ultra-modal-content {
+            background: #ffffff !important;
+            border-radius: 12px !important;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4) !important;
+            max-width: 90vw !important;
+            max-height: 90vh !important;
+            width: 700px !important;
+            margin: 20px !important;
+            overflow: hidden !important;
+            position: relative !important;
+            display: flex !important;
+            flex-direction: column !important;
+            pointer-events: auto !important;
+            /* Ensure it's not constrained by parent */
+            transform: none !important;
+            clip: none !important;
+            /* Disable any hover effects that could cause flickering */
+            transition: none !important;
+            animation: none !important;
+        }
+        
+        .ultra-modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            color: white !important;
+            padding: 20px 25px !important;
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            flex-shrink: 0 !important;
+            /* No hover effects */
+            transition: none !important;
+        }
+        
+        .ultra-modal-title {
+            margin: 0 !important;
+            font-size: 20px !important;
+            font-weight: 600 !important;
+            color: white !important;
+            /* No text selection issues */
+            user-select: none !important;
+            -webkit-user-select: none !important;
+            -moz-user-select: none !important;
+        }
+        
+        .ultra-modal-close {
+            background: rgba(255, 255, 255, 0.2) !important;
+            border: none !important;
+            color: white !important;
+            width: 40px !important;
+            height: 40px !important;
+            border-radius: 50% !important;
+            cursor: pointer !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 20px !important;
+            font-weight: bold !important;
+            flex-shrink: 0 !important;
+            /* Disable all hover/focus effects that could cause flickering */
+            transition: none !important;
+            outline: none !important;
+            -webkit-appearance: none !important;
+            -moz-appearance: none !important;
+            appearance: none !important;
+        }
+        
+        /* Remove hover effects completely to prevent cursor flickering */
+        .ultra-modal-close:hover,
+        .ultra-modal-close:focus,
+        .ultra-modal-close:active {
+            background: rgba(255, 255, 255, 0.2) !important;
+            transform: none !important;
+            box-shadow: none !important;
+            outline: none !important;
+        }
+        
+        .ultra-modal-body {
+            padding: 25px !important;
+            overflow-y: auto !important;
+            flex: 1 !important;
+            max-height: calc(90vh - 160px) !important;
+            /* Disable cursor-related effects */
+            -webkit-overflow-scrolling: touch !important;
+        }
+        
+        .ultra-modal-footer {
+            padding: 20px 25px !important;
+            border-top: 1px solid #e9ecef !important;
+            background-color: #f8f9fa !important;
+            display: flex !important;
+            justify-content: flex-end !important;
+            gap: 15px !important;
+            flex-shrink: 0 !important;
+        }
+        
+        /* Prevent body scroll when modal is open */
+        body.ultra-modal-open {
+            overflow: hidden !important;
+            padding-right: 0 !important;
+            /* Disable pointer events on body to prevent conflicts */
+            pointer-events: none !important;
+            /* Ensure body doesn't interfere with modal positioning */
+            position: relative !important;
+        }
+        
+        /* Re-enable pointer events only on modal */
+        body.ultra-modal-open .ultra-modal {
+            pointer-events: auto !important;
+        }
+        
+        /* Ensure modal is above everything */
+        .ultra-modal {
+            isolation: isolate !important;
+        }
+        
+        /* Break out of any container constraints */
+        body.ultra-modal-open .ultra-modal {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            transform: none !important;
+            clip: none !important;
+            overflow: visible !important;
+        }
+        
+        /* Disable all hover effects on modal content to prevent flickering */
+        .ultra-modal-body *,
+        .ultra-modal-body *:hover,
+        .ultra-modal-body *:focus {
+            transition: none !important;
+            transform: none !important;
+        }
+        
+        /* Style modal content without hover effects */
+        .ultra-modal-body .card {
+            background: white !important;
+            border: 1px solid #e9ecef !important;
+            border-radius: 8px !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+            margin-bottom: 15px !important;
+            transition: none !important;
+        }
+        
+        .ultra-modal-body .card:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+            transform: none !important;
+        }
+        
+        .ultra-modal-body .table {
+            background: white !important;
+            border-radius: 8px !important;
+            overflow: hidden !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+            margin-bottom: 0 !important;
+        }
+        
+        .ultra-modal-body .table th {
+            background: #f8f9fa !important;
+            border-bottom: 2px solid #dee2e6 !important;
+            font-weight: 600 !important;
+            color: #495057 !important;
+        }
+        
+        /* Disable all Bootstrap hover effects that could conflict */
+        .ultra-modal .table-hover tbody tr:hover {
+            background-color: transparent !important;
+        }
+        
+        .ultra-modal .btn:hover,
+        .ultra-modal .btn:focus {
+            transform: none !important;
+            box-shadow: none !important;
+        }
+        
+        /* Responsive design without hover conflicts */
+        @media (max-width: 768px) {
+            .ultra-modal-content {
+                width: 95vw !important;
+                max-height: 90vh !important;
+                margin: 10px !important;
+            }
+            
+            .ultra-modal-header {
+                padding: 15px 20px !important;
+            }
+            
+            .ultra-modal-title {
+                font-size: 18px !important;
+            }
+            
+            .ultra-modal-body {
+                padding: 20px !important;
+            }
+            
+            .ultra-modal-footer {
+                padding: 15px 20px !important;
+                flex-direction: column !important;
+            }
+            
+            .ultra-modal-footer .btn {
+                width: 100% !important;
+            }
+        }
+        
+        /* Override any existing cursor or hover styles */
+        .ultra-modal,
+        .ultra-modal *,
+        .ultra-modal *:before,
+        .ultra-modal *:after {
+            -webkit-backface-visibility: hidden !important;
+            backface-visibility: hidden !important;
+            -webkit-perspective: 1000px !important;
+            perspective: 1000px !important;
+        }
+        
+        /* Force hardware acceleration to prevent rendering issues */
+        .ultra-modal-content {
+            -webkit-transform: translateZ(0) !important;
+            transform: translateZ(0) !important;
+            will-change: auto !important;
+        }
+        
+        /* Ensure modal breaks out of any parent overflow constraints */
+        body.ultra-modal-open * {
+            overflow: visible !important;
+        }
+        
+        body.ultra-modal-open .ultra-modal {
+            overflow: visible !important;
+        }
+        
+        /* Hide any conflicting modals */
+        .modal, .modal-backdrop, .stable-modal, .custom-modal {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    {% if current_user.is_authenticated %}
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+                <div class="position-sticky pt-3">
+                    <div class="text-center mb-4">
+                        <h4 class="text-white"><i class="fas fa-tasks"></i> Operation Excellence</h4>
+                        <p class="text-white-50">Welcome, {{ current_user.name }}</p>
+                    </div>
+                    
+                    <ul class="nav flex-column">
+                        {% if current_user.role == 'admin' %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('admin_dashboard') }}">
+                                <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('create_user') }}">
+                                <i class="fas fa-user-plus me-2"></i> Create User
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('create_event') }}">
+                                <i class="fas fa-calendar-plus me-2"></i> Create Initiative
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('smtp_settings') }}">
+                                <i class="fas fa-envelope me-2"></i> SMTP Settings
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('designation_management') }}">
+                                <i class="fas fa-tags me-2"></i>Designation Management
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('custom_divisions') }}">
+                                <i class="fas fa-sitemap me-2"></i>Division Management
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('custom_raised_from') }}">
+                                <i class="fas fa-bullhorn me-2"></i>Raised From Management
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('user_status_view') }}">
+                                <i class="fas fa-chart-line me-2"></i>User Status View
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('user_dashboard') }}">
+                                <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('user_history') }}">
+                                <i class="fas fa-history me-2"></i> History
+                            </a>
+                        </li>
+                        {% endif %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('logout') }}">
+                                <i class="fas fa-sign-out-alt me-2"></i> Logout
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Main content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 main-content">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">{% block page_title %}{% endblock %}</h1>
+                    
+                    <!-- Notification Icon -->
+                    {% if current_user.role == 'admin' %}
+                    <div class="dropdown">
+                        <button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="adminNotificationDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-bell"></i>
+                            <span class="badge bg-danger" id="adminNotificationCount">0</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="adminNotificationDropdown" style="min-width: 400px; max-height: 400px; overflow-y: auto;">
+                            <li><h6 class="dropdown-header">Recent Notifications (Last 24 Hours)</h6></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <div id="adminNotificationList">
+                                <li><span class="dropdown-item-text">Loading notifications...</span></li>
+                            </div>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-center" href="{{ url_for('admin_notifications') }}">
+                                <i class="fas fa-eye me-2"></i>View All Notifications
+                            </a></li>
+                        </ul>
+                    </div>
+                    {% else %}
+                    <div class="dropdown">
+                        <button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="userNotificationDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-bell"></i>
+                            <span class="badge bg-danger" id="userNotificationCount">0</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userNotificationDropdown" style="min-width: 350px; max-height: 400px; overflow-y: auto;">
+                            <li><h6 class="dropdown-header">Latest 5 Notifications</h6></li>
+                            <div id="userNotificationList">
+                                <li><span class="dropdown-item-text">Loading notifications...</span></li>
+                            </div>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-center" href="{{ url_for('user_notifications') }}">
+                                <i class="fas fa-eye me-2"></i>View All Notifications
+                            </a></li>
+                        </ul>
+                    </div>
+                    {% endif %}
+                </div>
+
+                {% with messages = get_flashed_messages() %}
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-info alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+    {% else %}
+    <div class="container-fluid">
+        {% block auth_content %}{% endblock %}
+    </div>
+    {% endif %}
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        // Basic modal handling
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle body scroll
+            document.addEventListener('show.bs.modal', function() {
+                document.body.classList.add('modal-open');
+            });
+            
+            document.addEventListener('hidden.bs.modal', function() {
+                document.body.classList.remove('modal-open');
+            });
+            
+            // Notification handling
+            {% if current_user.role == 'admin' %}
+            loadAdminNotifications();
+            
+            // Refresh notifications every 30 seconds
+            setInterval(loadAdminNotifications, 30000);
+            {% else %}
+            loadUserNotifications();
+            
+            // Refresh notifications every 30 seconds
+            setInterval(loadUserNotifications, 30000);
+            {% endif %}
+        });
+        
+        {% if current_user.role == 'admin' %}
+        function loadAdminNotifications() {
+            fetch('/admin/recent_notifications')
+                .then(response => response.json())
+                .then(data => {
+                    // Update notification count
+                    const countElement = document.getElementById('adminNotificationCount');
+                    if (countElement) {
+                        countElement.textContent = data.count;
+                        countElement.style.display = data.count > 0 ? 'inline' : 'none';
+                    }
+                    
+                    // Update notification list
+                    const notificationList = document.getElementById('adminNotificationList');
+                    if (notificationList) {
+                        if (data.notifications && data.notifications.length > 0) {
+                            let html = '';
+                            data.notifications.forEach(notification => {
+                                html += `
+                                    <li>
+                                        <a class="dropdown-item" href="#">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div class="flex-grow-1">
+                                                    <div class="fw-bold small">${notification.user_email}</div>
+                                                    <div class="mt-1">${notification.message}</div>
+                                                </div>
+                                                <div class="text-end ms-2">
+                                                    <small class="text-muted d-block">${notification.created_at}</small>
+                                                    <span class="badge bg-primary small">${notification.type}</span>
+                                                </div>
+                                            </div>
+                                        </a>
+                                    </li>
+                                `;
+                            });
+                            notificationList.innerHTML = html;
+                        } else {
+                            notificationList.innerHTML = '<li><span class="dropdown-item-text">No new notifications in last 24 hours</span></li>';
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading notifications:', error);
+                });
+        }
+        {% else %}
+        function loadUserNotifications() {
+            fetch('/user/recent_notifications')
+                .then(response => response.json())
+                .then(data => {
+                    // Update notification count
+                    const countElement = document.getElementById('userNotificationCount');
+                    if (countElement) {
+                        countElement.textContent = data.count;
+                        countElement.style.display = data.count > 0 ? 'inline' : 'none';
+                    }
+                    
+                    // Update notification list
+                    const notificationList = document.getElementById('userNotificationList');
+                    if (notificationList) {
+                        if (data.notifications && data.notifications.length > 0) {
+                            let html = '';
+                            data.notifications.forEach(notification => {
+                                html += `
+                                    <li>
+                                        <a class="dropdown-item notification-item ${notification.read ? '' : 'fw-bold'}" href="#" onclick="markAsRead('${notification._id}')">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div class="flex-grow-1">
+                                                    <small class="text-muted">${notification.created_at}</small><br>
+                                                    ${notification.message}
+                                                </div>
+                                                ${notification.read ? '' : '<span class="badge bg-warning ms-2">New</span>'}
+                                            </div>
+                                        </a>
+                                    </li>
+                                `;
+                            });
+                            notificationList.innerHTML = html;
+                        } else {
+                            notificationList.innerHTML = '<li><span class="dropdown-item-text">No notifications found</span></li>';
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading notifications:', error);
+                });
+        }
+        
+        function markAsRead(notificationId) {
+            fetch(`/mark_notification_read/${notificationId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Remove the notification item from dropdown
+                        const notificationItem = document.querySelector(`[onclick="markAsRead('${notificationId}')"]`);
+                        if (notificationItem) {
+                            notificationItem.closest('li').remove();
+                        }
+                        
+                        // Update notification count
+                        updateUserNotificationCount();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
+        
+        function updateUserNotificationCount() {
+            const unreadCount = document.querySelectorAll('.notification-item.fw-bold').length;
+            const badge = document.querySelector('#userNotificationCount');
+            
+            if (badge) {
+                if (unreadCount > 0) {
+                    badge.textContent = unreadCount;
+                    badge.style.display = 'inline';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+        }
+        {% endif %}
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html> 

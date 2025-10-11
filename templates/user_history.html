@@ -1,0 +1,330 @@
+{% extends "base.html" %}
+
+{% block title %}My History - Operation Excellence{% endblock %}
+{% block page_title %}My Completed Initiatives{% endblock %}
+
+{% block content %}
+<!-- Notification Bar -->
+{% if notifications %}
+<div class="alert alert-info alert-dismissible fade show" role="alert" style="color: #222; background: #e9f7fe; border-color: #b6e2fc;">
+    <i class="fas fa-bell me-2"></i>
+    <strong>New Notifications:</strong> You have {{ notifications|length }} new notification(s)
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endif %}
+
+<!-- Welcome Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card" style="background: #fff; color: #222;">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h4 class="mb-1" style="color: #222;">Completed Initiatives History</h4>
+                        <p class="mb-0" style="color: #222;">You have completed {{ completed_events|length }} initiatives</p>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <i class="fas fa-history fa-3x" style="color: #222;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Completed Events -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-history me-2"></i>Completed Initiatives</h5>
+            </div>
+            <div class="card-body">
+                {% if completed_events %}
+                <div class="row">
+                    {% for event in completed_events %}
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">
+                                    {{ event.title }}
+                                    {% if event.document_path %}
+                                    <i class="fas fa-paperclip text-primary ms-1" title="Document attached"></i>
+                                    {% endif %}
+                                    {% if event.completion_file %}
+                                    <i class="fas fa-file-check text-success ms-1" title="Completion file attached"></i>
+                                    {% endif %}
+                                </h6>
+                                <span class="badge bg-success">Completed</span>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text">{{ event.description }}</p>
+                                
+                                <!-- Additional Fields -->
+                                <div class="row mb-2">
+                                    <div class="col-md-6">
+                                        <small class="text-muted"><strong>Category:</strong> {{ event.category|title if event.category else 'N/A' }}</small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <small class="text-muted"><strong>Raised From:</strong> {{ event.raised_from|title if event.raised_from else 'N/A' }}</small>
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-2">
+                                    <div class="col-md-6">
+                                        <small class="text-muted">Created: {{ event.created_at.strftime('%Y-%m-%d') if event.created_at else 'N/A' }}</small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        {% if event.due_date %}
+                                        <small class="text-muted">Due: {{ event.due_date.strftime('%Y-%m-%d') }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                {% if event.revised_due_date %}
+                                <div class="mb-2">
+                                    <small class="text-warning"><strong>Revised Due:</strong> {{ event.revised_due_date.strftime('%Y-%m-%d') }}</small>
+                                </div>
+                                {% endif %}
+                                
+                                <!-- Assigned Users -->
+                                {% if event.assigned_users %}
+                                <div class="mb-2">
+                                    <small class="text-muted"><strong>Assigned Users:</strong></small><br>
+                                    {% for user_email in event.assigned_users %}
+                                    <span class="badge bg-light text-dark me-1">{{ user_email }}</span>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                                
+                                <!-- Document Link -->
+                                {% if event.document_path %}
+                                <div class="mb-2">
+                                    <a href="{{ url_for('download_file', filename=event.document_path.split('/')[-1]) }}" target="_blank" class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-file me-1"></i>View Document
+                                    </a>
+                                </div>
+                                {% endif %}
+                                
+                                <!-- Completion Details -->
+                                {% if event.completion_remarks %}
+                                <div class="mb-2">
+                                    <small class="text-muted"><strong>Completion Remarks:</strong></small><br>
+                                    <small>{{ event.completion_remarks }}</small>
+                                </div>
+                                {% endif %}
+                                
+                                <!-- Completion File -->
+                                {% if event.completion_file %}
+                                <div class="mb-2">
+                                    <a href="{{ url_for('download_file', filename=event.completion_file.split('/')[-1]) }}" target="_blank" class="btn btn-outline-success btn-sm">
+                                        <i class="fas fa-file-check me-1"></i>View Completion File
+                                    </a>
+                                </div>
+                                {% endif %}
+                                
+                                <!-- Status History -->
+                                {% if event.status_history %}
+                                <div class="mt-3">
+                                    <button class="btn btn-secondary btn-sm view-history-btn" data-event-id="{{ event._id }}">
+                                        <i class="fas fa-history me-1"></i>View History
+                                    </button>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Status History Modal - Ultra-Stable System -->
+                    {% if event.status_history %}
+                    <div class="ultra-modal" id="historyModal{{ event._id }}">
+                        <div class="ultra-modal-content">
+                            <div class="ultra-modal-header">
+                                <h5 class="ultra-modal-title">Status History - {{ event.title }}</h5>
+                                <button type="button" class="ultra-modal-close" data-event-id="{{ event._id }}">&times;</button>
+                            </div>
+                            <div class="ultra-modal-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th>Date</th>
+                                                    <th>Status</th>
+                                                    <th>Changed By</th>
+                                                    <th>Reason</th>
+                                                    <th>Details</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for history in event.status_history|sort(attribute='changed_at', reverse=true) %}
+                                                <tr>
+                                                    <td>{{ history.changed_at.strftime('%Y-%m-%d %H:%M') if history.changed_at else 'N/A' }}</td>
+                                                    <td>
+                                                        {% if history.status == 'pending' %}
+                                                        <span class="badge bg-warning">Pending</span>
+                                                        {% elif history.status == 'in_progress' %}
+                                                        <span class="badge bg-info">In Progress</span>
+                                                        {% elif history.status == 'completed' %}
+                                                        <span class="badge bg-success">Completed</span>
+                                                        {% else %}
+                                                        <span class="badge bg-secondary">{{ history.status|title }}</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>{{ history.changed_by if history.changed_by else 'System' }}</td>
+                                                    <td>{{ history.reason if history.reason else 'N/A' }}</td>
+                                                    <td>
+                                                        {% if history.revised_due_date %}
+                                                        <small class="text-warning">Due: {{ history.revised_due_date.strftime('%Y-%m-%d') }}</small><br>
+                                                        {% endif %}
+                                                        {% if history.progress_file %}
+                                                        <a href="{{ url_for('download_file', filename=history.progress_file.split('/')[-1]) }}" target="_blank" class="btn btn-sm btn-outline-info mt-1" title="View Progress Document">
+                                                            <i class="fas fa-file-alt me-1"></i>Progress File
+                                                        </a><br>
+                                                        {% endif %}
+                                                        {% if history.completion_file %}
+                                                        <a href="{{ url_for('download_file', filename=history.completion_file.split('/')[-1]) }}" target="_blank" class="btn btn-sm btn-outline-success mt-1" title="View Completion File">
+                                                            <i class="fas fa-file-check me-1"></i>Completion File
+                                                        </a>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                            </div>
+                            <div class="ultra-modal-footer">
+                                <button type="button" class="btn btn-secondary ultra-modal-close" data-event-id="{{ event._id }}">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No completed initiatives</h5>
+                    <p class="text-muted">You haven't completed any initiatives yet.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Ultra-Stable Modal System - Completely Cursor Independent
+(function() {
+    'use strict';
+    
+    // Ensure modal breaks out of any parent constraints
+    function showModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (!modal) return;
+        
+        // Move modal to document body if it's not already there
+        if (modal.parentElement !== document.body) {
+            document.body.appendChild(modal);
+        }
+        
+        // Disable pointer events on everything except modal
+        document.body.classList.add('ultra-modal-open');
+        
+        // Force specific positioning to break out of parent constraints
+        modal.style.position = 'fixed';
+        modal.style.top = '0';
+        modal.style.left = '0';
+        modal.style.right = '0';
+        modal.style.bottom = '0';
+        modal.style.width = '100vw';
+        modal.style.height = '100vh';
+        modal.style.margin = '0';
+        modal.style.padding = '0';
+        modal.style.transform = 'none';
+        modal.style.zIndex = '999999';
+        
+        // Show modal immediately without any transitions
+        modal.classList.add('show');
+        
+        // Force immediate render to prevent flickering
+        modal.offsetHeight;
+    }
+    
+    function hideModal(modal) {
+        if (!modal) return;
+        
+        // Hide modal immediately
+        modal.classList.remove('show');
+        
+        // Re-enable body interactions
+        document.body.classList.remove('ultra-modal-open');
+    }
+    
+    // Initialize with immediate event binding
+    function init() {
+        // Move all modals to document body to ensure they're not constrained
+        const modals = document.querySelectorAll('.ultra-modal');
+        modals.forEach(modal => {
+            if (modal.parentElement !== document.body) {
+                document.body.appendChild(modal);
+            }
+        });
+        
+        // Single click handler for everything
+        document.addEventListener('click', function(e) {
+            // View history button
+            if (e.target.closest('.view-history-btn')) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const eventId = e.target.closest('.view-history-btn').getAttribute('data-event-id');
+                if (eventId) {
+                    showModal('historyModal' + eventId);
+                }
+                return false;
+            }
+            
+            // Close button
+            if (e.target.closest('.ultra-modal-close')) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const modal = e.target.closest('.ultra-modal');
+                if (modal) {
+                    hideModal(modal);
+                }
+                return false;
+            }
+            
+            // Backdrop click
+            if (e.target.classList.contains('ultra-modal')) {
+                e.preventDefault();
+                e.stopPropagation();
+                hideModal(e.target);
+                return false;
+            }
+        }, true); // Use capture to prevent any bubbling issues
+        
+        // Escape key handler
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const openModal = document.querySelector('.ultra-modal.show');
+                if (openModal) {
+                    e.preventDefault();
+                    hideModal(openModal);
+                }
+            }
+        }, true);
+    }
+    
+    // Initialize immediately
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+})();
+</script>
+
+{% endblock %} 

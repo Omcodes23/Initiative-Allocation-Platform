@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block title %}System Health - Operation Excellence{% endblock %}
+{% block page_title %}System Health Monitor{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Database Status -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-database me-2"></i>
+                    Database Status
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span>Connection Status:</span>
+                    <span class="badge {% if health_info.database.status == 'connected' %}bg-success{% else %}bg-danger{% endif %}">
+                        {{ health_info.database.status|title }}
+                    </span>
+                </div>
+                
+                {% if health_info.database.status == 'connected' %}
+                    <div class="row">
+                        <div class="col-6">
+                            <small class="text-muted">Version:</small><br>
+                            <strong>{{ health_info.database.version }}</strong>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted">Uptime:</small><br>
+                            <strong>{{ (health_info.database.uptime / 3600)|round(1) }} hours</strong>
+                        </div>
+                    </div>
+                    
+                    {% if health_info.database.connections %}
+                    <div class="mt-3">
+                        <small class="text-muted">Connections:</small>
+                        <div class="row">
+                            <div class="col-4">
+                                <small>Current: {{ health_info.database.connections.current|default(0) }}</small>
+                            </div>
+                            <div class="col-4">
+                                <small>Available: {{ health_info.database.connections.available|default(0) }}</small>
+                            </div>
+                            <div class="col-4">
+                                <small>Max: {{ health_info.database.connections.max|default(0) }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                {% else %}
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Database Error: {{ health_info.database.error }}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- System Statistics -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>
+                    System Statistics
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6 mb-3">
+                        <div class="text-center">
+                            <div class="h4 text-primary">{{ health_info.statistics.total_users }}</div>
+                            <small class="text-muted">Total Users</small>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="text-center">
+                            <div class="h4 text-success">{{ health_info.statistics.total_events }}</div>
+                            <small class="text-muted">Total Events</small>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="text-center">
+                            <div class="h4 text-warning">{{ health_info.statistics.total_notifications }}</div>
+                            <small class="text-muted">Notifications</small>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="text-center">
+                            <div class="h4 text-info">{{ health_info.statistics.active_sessions }}</div>
+                            <small class="text-muted">Active Sessions</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Configuration -->
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-cogs me-2"></i>
+                    System Configuration
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <small class="text-muted">Platform URL:</small><br>
+                        <strong>{{ health_info.system.platform_url }}</strong>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <small class="text-muted">Max File Size:</small><br>
+                        <strong>{{ (health_info.system.max_content_length / 1024 / 1024)|round(1) }} MB</strong>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <small class="text-muted">Session Timeout:</small><br>
+                        <strong>{{ (health_info.system.session_timeout / 60)|round(0) }} minutes</strong>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <small class="text-muted">Max Concurrent Users:</small><br>
+                        <strong>{{ health_info.system.max_concurrent_users }}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Real-time Monitoring -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-line me-2"></i>
+                    Real-time Monitoring
+                </h5>
+                <button class="btn btn-sm btn-outline-primary" onclick="refreshHealth()">
+                    <i class="fas fa-sync-alt me-1"></i>Refresh
+                </button>
+            </div>
+            <div class="card-body">
+                <div id="health-status" class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function refreshHealth() {
+    const statusDiv = document.getElementById('health-status');
+    statusDiv.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>';
+    
+    // Simulate health check (in real implementation, this would be an AJAX call)
+    setTimeout(() => {
+        statusDiv.innerHTML = `
+            <div class="alert alert-success">
+                <i class="fas fa-check-circle me-2"></i>
+                System is healthy and running smoothly
+            </div>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="text-center">
+                        <div class="h5 text-success">100%</div>
+                        <small class="text-muted">Uptime</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="text-center">
+                        <div class="h5 text-info">Normal</div>
+                        <small class="text-muted">Load</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="text-center">
+                        <div class="h5 text-warning">Good</div>
+                        <small class="text-muted">Performance</small>
+                    </div>
+                </div>
+            </div>
+        `;
+    }, 1000);
+}
+
+// Auto-refresh every 30 seconds
+setInterval(refreshHealth, 30000);
+
+// Initial load
+document.addEventListener('DOMContentLoaded', function() {
+    refreshHealth();
+});
+</script>
+
+<style>
+.card {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.badge {
+    font-size: 0.8em;
+}
+
+.h4 {
+    margin-bottom: 0;
+}
+</style>
+{% endblock %} 

@@ -1,0 +1,517 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - Operation Excellence{% endblock %}
+{% block page_title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- User Statistics -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Total Users</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.total_users }}</div>
+                        <div class="text-xs text-muted">
+                            {{ stats.active_users }} Active | {{ stats.temp_password_users }} Temp Password
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-users fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Event Statistics -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Total Events</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.total_events }}</div>
+                        <div class="text-xs text-muted">
+                            {{ stats.completed_events }} Completed | {{ stats.overdue_events }} Overdue
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-calendar fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Event Status Breakdown -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            Event Status</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            {{ stats.pending_events + stats.in_progress_events + stats.delay_events }}
+                        </div>
+                        <div class="text-xs text-muted">
+                            {{ stats.pending_events }} Pending | {{ stats.in_progress_events }} In Progress | {{ stats.delay_events }} Delay
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-clipboard-list fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Email Service Status -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            Email Service</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            {% if smtp_settings and smtp_settings.enabled %}ON{% else %}OFF{% endif %}
+                        </div>
+                        <div class="text-xs text-muted">
+                            Notifications & Alerts
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-envelope fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Platform Link Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-primary">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-link me-2"></i>Platform Access</h5>
+            </div>
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h6 class="mb-2">Platform URL</h6>
+                        <p class="text-muted mb-0">Share this link with users to access the platform:</p>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="platformUrl" value="{{ platform_url }}" readonly>
+                            <button class="btn btn-outline-primary" type="button" onclick="copyPlatformUrl()">
+                                <i class="fas fa-copy"></i> Copy
+                            </button>
+                            <a href="{{ url_for('platform_settings') }}" class="btn btn-outline-secondary" title="Configure Platform URL">
+                                <i class="fas fa-cog"></i>
+                            </a>
+                            <a href="{{ url_for('system_health') }}" class="btn btn-outline-info" title="System Health Monitor">
+                                <i class="fas fa-heartbeat"></i>
+                            </a>
+                            <a href="{{ url_for('send_overdue_reminders') }}" class="btn btn-outline-warning" title="Send Reminders Now" onclick="return confirm('Send reminder notifications to all users with due/overdue initiatives?')">
+                                <i class="fas fa-bell"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Statistics Row -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Detailed Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-2">
+                        <div class="text-center">
+                            <div class="h4 text-warning">{{ stats.pending_events }}</div>
+                            <div class="text-sm text-muted">Pending</div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="text-center">
+                            <div class="h4 text-info">{{ stats.in_progress_events }}</div>
+                            <div class="text-sm text-muted">Work in Progress</div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="text-center">
+                            <div class="h4 text-danger">{{ stats.delay_events }}</div>
+                            <div class="text-sm text-muted">Delay</div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="text-center">
+                            <div class="h4 text-success">{{ stats.completed_events }}</div>
+                            <div class="text-sm text-muted">Complete</div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="text-center">
+                            <div class="h4 text-secondary">{{ stats.overdue_events }}</div>
+                            <div class="text-sm text-muted">Overdue</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- Recent Users -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-users me-2"></i>Recent Users</h5>
+                    <div class="ms-auto">
+                        <label class="form-label me-2 mb-0">Show</label>
+                        <select id="userRowLimit" class="form-select form-select-sm d-inline-block" style="width:auto;" onchange="applyUserLimit()">
+                            <option value="5" selected>5</option>
+                            <option value="10">10</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                            <option value="all">All</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if users %}
+                <div class="table-responsive">
+                    <table id="usersTable" class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Designation</th>
+                                <th>Created</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users %}
+                            <tr>
+                                <td>{{ user.name }}</td>
+                                <td>{{ user.email }}</td>
+                                <td>{{ user.phone if user.phone else 'N/A' }}</td>
+                                <td>{{ user.designation if user.designation else 'N/A' }}</td>
+                                <td>{{ user.created_at.strftime('%Y-%m-%d') if user.created_at else 'N/A' }}</td>
+                                <td>
+                                    {% if user.temp_password %}
+                                    <span class="badge bg-warning">Temporary Password</span>
+                                    {% else %}
+                                    <span class="badge bg-success">Active</span>
+                                    {% endif %}
+                                    {% if user.assigned_events_count > 0 %}
+                                    <br><small class="text-info">
+                                        <i class="fas fa-tasks me-1"></i>{{ user.assigned_events_count }} initiative(s) assigned
+                                    </small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{{ url_for('edit_user', user_id=user._id) }}" class="btn btn-sm btn-outline-primary" title="Edit User">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-outline-warning" onclick="generateTempPassword('{{ user._id }}')" title="Generate Temp Password">
+                                            <i class="fas fa-key"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteUser('{{ user._id }}', '{{ user.name }}', {{ user.assigned_events_count }})" title="Delete User">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center">No users found.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Events -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-calendar me-2"></i>Recent Initiatives</h5>
+                    <div class="ms-auto">
+                        <label class="form-label me-2 mb-0">Show</label>
+                        <select id="rowLimit" class="form-select form-select-sm d-inline-block" style="width:auto;" onchange="applyLimit()">
+                            <option value="10">10</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                            <option value="100" selected>100</option>
+                            <option value="all">All</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if events %}
+                <div class="table-responsive">
+                    <table id="initiativesTable" class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Description</th>
+                                <th>Category</th>
+                                <th>Division</th>
+                                <th>Raised From</th>
+                                <th>Assigned Users</th>
+                                <th>Due Date</th>
+                                <th>Status</th>
+                                <th>Reminders</th>
+                                <th>Document</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for event in events %}
+                            <tr>
+                                <td>{{ event.title }}</td>
+                                <td>{{ event.description[:50] }}{% if event.description|length > 50 %}...{% endif %}</td>
+                                <td>{{ event.category|title if event.category else 'N/A' }}</td>
+                                <td><span class="badge bg-info">{{ event.division if event.division else 'N/A' }}</span></td>
+                                <td>{{ event.raised_from|title if event.raised_from else 'N/A' }}</td>
+                                <td>
+                                    {% for user_email in event.assigned_users[:2] %}
+                                    <span class="badge bg-primary">{{ user_email }}</span>
+                                    {% endfor %}
+                                    {% if event.assigned_users|length > 2 %}
+                                    <span class="badge bg-secondary">+{{ event.assigned_users|length - 2 }} more</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if event.revised_due_date %}
+                                        {% set effective_due_date = event.revised_due_date %}
+                                        {% set is_revised = true %}
+                                    {% elif event.due_date %}
+                                        {% set effective_due_date = event.due_date %}
+                                        {% set is_revised = false %}
+                                    {% else %}
+                                        {% set effective_due_date = none %}
+                                        {% set is_revised = false %}
+                                    {% endif %}
+                                    
+                                    {% if effective_due_date %}
+                                        {% if effective_due_date.date() < today %}
+                                            <span class="text-danger">
+                                                {{ effective_due_date.strftime('%Y-%m-%d') }}
+                                                {% if is_revised %}<br><small class="text-warning">(Revised)</small>{% endif %}
+                                            </span>
+                                        {% else %}
+                                            {{ effective_due_date.strftime('%Y-%m-%d') }}
+                                            {% if is_revised %}<br><small class="text-warning">(Revised)</small>{% endif %}
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if event.status == 'pending' %}
+                                    <span class="badge bg-warning">Pending</span>
+                                    {% elif event.status == 'in_progress' %}
+                                    <span class="badge bg-info">Work in Progress</span>
+                                    {% elif event.status == 'delay' %}
+                                    <span class="badge bg-danger">Delay</span>
+                                    {% elif event.status == 'completed' %}
+                                    <span class="badge bg-success">Complete</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">{{ event.status|title }}</span>
+                                    {% endif %}
+                                    {% if event.status_history and event.status_history|length > 1 %}
+                                    <br><small class="text-muted">{{ event.status_history|length }} changes</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if event.enable_reminders %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-bell me-1"></i>{{ event.reminder_frequency|title }}
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">
+                                            <i class="fas fa-bell-slash me-1"></i>Disabled
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if event.document_path %}
+                                        {% set filename = event.document_path.split('/')[-1] %}
+                                        <a href="{{ url_for('download_file', filename=filename) }}" target="_blank" class="btn btn-sm btn-outline-primary" title="View Document">
+                                            <i class="fas fa-file me-1"></i>{{ filename[:20] }}{% if filename|length > 20 %}...{% endif %}
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted">No document</span>
+                                    {% endif %}
+                                    {% if event.progress_file %}
+                                        <br>
+                                        {% set filename = event.progress_file.split('/')[-1] %}
+                                        <a href="{{ url_for('download_file', filename=filename) }}" target="_blank" class="btn btn-sm btn-outline-info mt-1" title="View Progress Document">
+                                            <i class="fas fa-file-alt me-1"></i>{{ filename[:20] }}{% if filename|length > 20 %}...{% endif %}
+                                        </a>
+                                    {% endif %}
+                                    {% if event.completion_file %}
+                                        <br>
+                                        {% set filename = event.completion_file.split('/')[-1] %}
+                                        <a href="{{ url_for('download_file', filename=filename) }}" target="_blank" class="btn btn-sm btn-outline-success mt-1" title="View Completion File">
+                                            <i class="fas fa-file-check me-1"></i>{{ filename[:20] }}{% if filename|length > 20 %}...{% endif %}
+                                        </a>
+                                    {% endif %}
+                                </td>
+                                <td>{{ event.created_at.strftime('%Y-%m-%d') if event.created_at else 'N/A' }}</td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{{ url_for('edit_event', event_id=event._id) }}" class="btn btn-sm btn-outline-primary" title="Edit Event">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteEvent('{{ event._id }}', '{{ event.title }}')" title="Delete Event">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center">No events found.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% for event in events %}
+{% if event.status_history %}
+<!-- Status history modal removed as per user request -->
+{% endif %}
+{% endfor %}
+
+<script>
+function deleteUser(userId, userName, assignedEventsCount) {
+    let message = `Are you sure you want to delete user "${userName}"?`;
+    
+    if (assignedEventsCount > 0) {
+        message += `\n\n⚠️ WARNING: This user is currently assigned to ${assignedEventsCount} initiative(s).\nDeleting this user will remove them from all assigned initiatives.`;
+    }
+    
+    message += '\n\nThis action cannot be undone.';
+    
+    if (confirm(message)) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/admin/delete_user/${userId}`;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+function generateTempPassword(userId) {
+    if (confirm('Are you sure you want to generate a new temporary password for this user?')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/admin/generate_temp_password/${userId}`;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+function deleteEvent(eventId, eventTitle) {
+    if (confirm(`Are you sure you want to delete event "${eventTitle}"? This action cannot be undone.`)) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/admin/delete_event/${eventId}`;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+function copyPlatformUrl() {
+    const platformUrl = document.getElementById('platformUrl');
+    platformUrl.select();
+    platformUrl.setSelectionRange(0, 99999); // For mobile devices
+    
+    try {
+        navigator.clipboard.writeText(platformUrl.value);
+        // Show success message
+        const button = event.target;
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-check"></i> Copied!';
+        button.classList.remove('btn-outline-primary');
+        button.classList.add('btn-success');
+        
+        setTimeout(() => {
+            button.innerHTML = originalText;
+            button.classList.remove('btn-success');
+            button.classList.add('btn-outline-primary');
+        }, 2000);
+    } catch (err) {
+        // Fallback for older browsers
+        document.execCommand('copy');
+        alert('Platform URL copied to clipboard!');
+    }
+}
+
+function applyLimit() {
+    const limitSelect = document.getElementById('rowLimit');
+    const value = limitSelect.value;
+    const rows = document.querySelectorAll('#initiativesTable tbody tr');
+    let max = rows.length;
+    if (value !== 'all') {
+        max = parseInt(value);
+    }
+    rows.forEach((row, idx) => {
+        row.style.display = idx < max ? '' : 'none';
+    });
+}
+
+function applyUserLimit() {
+    const limitSelect = document.getElementById('userRowLimit');
+    const value = limitSelect.value;
+    const rows = document.querySelectorAll('#usersTable tbody tr');
+    let max = rows.length;
+    if (value !== 'all') {
+        max = parseInt(value);
+    }
+    rows.forEach((row, idx) => {
+        row.style.display = idx < max ? '' : 'none';
+    });
+}
+
+// Apply default on load
+applyLimit();
+applyUserLimit();
+</script>
+{% endblock %} 

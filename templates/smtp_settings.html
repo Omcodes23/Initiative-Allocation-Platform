@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}SMTP Settings - Initiative Platform{% endblock %}
+{% block page_title %}SMTP Settings{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-envelope me-2"></i>Email Configuration</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="enabled" name="enabled" 
+                                   {% if smtp_settings and smtp_settings.enabled %}checked{% endif %}>
+                            <label class="form-check-label" for="enabled">
+                                <strong>Enable Email Service</strong>
+                            </label>
+                        </div>
+                        <small class="text-muted">When enabled, user passwords will be sent via email</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="smtp_server" class="form-label">SMTP Server</label>
+                        <input type="text" class="form-control" id="smtp_server" name="smtp_server" 
+                               value="{{ smtp_settings.smtp_server if smtp_settings else 'smtp.gmail.com' }}" required>
+                        <small class="text-muted">Example: smtp.gmail.com, smtp.outlook.com</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="smtp_port" class="form-label">SMTP Port</label>
+                        <input type="number" class="form-control" id="smtp_port" name="smtp_port" 
+                               value="{{ smtp_settings.smtp_port if smtp_settings else 587 }}" required>
+                        <small class="text-muted">Common ports: 587 (TLS), 465 (SSL), 25 (Standard)</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email Address</label>
+                        <input type="email" class="form-control" id="email" name="email" 
+                               value="{{ smtp_settings.email if smtp_settings else '' }}" required>
+                        <small class="text-muted">The email address that will send notifications</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Email Password</label>
+                        <input type="password" class="form-control" id="password" name="password" 
+                               value="{{ smtp_settings.password if smtp_settings else '' }}" required>
+                        <small class="text-muted">For Gmail, use an App Password if 2FA is enabled</small>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Gmail Setup:</strong> If using Gmail, you may need to:
+                        <ul class="mb-0 mt-2">
+                            <li>Enable 2-Factor Authentication</li>
+                            <li>Generate an App Password</li>
+                            <li>Use the App Password instead of your regular password</li>
+                        </ul>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Save Settings
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

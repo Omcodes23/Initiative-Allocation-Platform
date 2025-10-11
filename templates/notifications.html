@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications - Initiative Platform{% endblock %}
+{% block page_title %}Notifications{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-bell me-2"></i>User Activity Notifications</h5>
+                <button class="btn btn-sm btn-outline-primary" onclick="markAllAsRead()">
+                    <i class="fas fa-check-double me-1"></i>Mark All as Read
+                </button>
+            </div>
+            <div class="card-body">
+                {% if notifications %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Message</th>
+                                <th>Event</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for notification in notifications %}
+                            <tr class="notification-item {% if not notification.read %}table-warning{% endif %}" data-notification-id="{{ notification._id }}">
+                                <td>
+                                    <strong>{{ notification.user_email }}</strong>
+                                </td>
+                                <td class="notification-message">{{ notification.message }}</td>
+                                <td>
+                                    {% for event in events %}
+                                        {% if event._id|string == notification.event_id %}
+                                            {{ event.title }}
+                                        {% endif %}
+                                    {% endfor %}
+                                </td>
+                                <td class="notification-time">{{ notification.created_at.strftime('%Y-%m-%d %H:%M') if notification.created_at else 'N/A' }}</td>
+                                <td>
+                                    {% if notification.read %}
+                                    <span class="badge bg-success">Read</span>
+                                    {% else %}
+                                    <span class="badge bg-warning notification-type">New</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        {% if not notification.read %}
+                                        <button class="btn btn-sm btn-outline-success" onclick="markAsRead('{{ notification._id }}')">
+                                            <i class="fas fa-check me-1"></i>Mark Read
+                                        </button>
+                                        {% endif %}
+                                        <button class="btn btn-sm btn-outline-danger" onclick="removeNotification('{{ notification._id }}')">
+                                            <i class="fas fa-trash me-1"></i>Remove
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-bell-slash fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No notifications</h5>
+                    <p class="text-muted">You don't have any notifications yet.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function markAsRead(notificationId) {
+    fetch(`/mark_notification_read/${notificationId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+}
+
+function markAllAsRead() {
+    const unreadNotifications = document.querySelectorAll('.table-warning');
+    let promises = [];
+    
+    unreadNotifications.forEach(row => {
+        const button = row.querySelector('button');
+        if (button) {
+            const notificationId = button.getAttribute('onclick').match(/'([^']+)'/)[1];
+            promises.push(
+                fetch(`/mark_notification_read/${notificationId}`)
+                    .then(response => response.json())
+            );
+        }
+    });
+    
+    Promise.all(promises).then(() => {
+        location.reload();
+    });
+}
+
+function removeNotification(notificationId) {
+    if (!confirm('Are you sure you want to remove this notification?')) {
+        return;
+    }
+    
+    fetch(`/remove_notification/${notificationId}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Remove the notification row
+            const row = document.querySelector(`tr[data-notification-id="${notificationId}"]`);
+            if (row) {
+                row.remove();
+                alert('Notification removed successfully');
+            }
+        } else {
+            alert(data.error || 'Failed to remove notification');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error removing notification');
+    });
+}
+</script>
+{% endblock %} 

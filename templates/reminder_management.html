@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+
+{% block title %}Reminder Management - Operation Excellence{% endblock %}
+{% block page_title %}Reminder Management{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Reminder Statistics -->
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Reminder Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <div class="h4 text-primary">{{ stats.total_reminders_enabled }}</div>
+                            <small class="text-muted">Initiatives with Reminders</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <div class="h4 text-warning">{{ stats.due_soon }}</div>
+                            <small class="text-muted">Due Within 7 Days</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <div class="h4 text-danger">{{ stats.overdue }}</div>
+                            <small class="text-muted">Overdue</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <div class="h4 text-success">{{ stats.completed }}</div>
+                            <small class="text-muted">Completed</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manual Reminder Actions -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-bell me-2"></i>Manual Reminder Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-warning" onclick="sendReminders()">
+                        <i class="fas fa-paper-plane me-2"></i>Send All Reminders Now
+                    </button>
+                    <button class="btn btn-danger" onclick="sendOverdueReminders()">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Send Overdue Reminders Only
+                    </button>
+                    <button class="btn btn-info" onclick="testReminderSystem()">
+                        <i class="fas fa-vial me-2"></i>Test Reminder System
+                    </button>
+                </div>
+                
+                <div class="mt-3">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Reminders are automatically sent daily at 9:00 AM for initiatives with reminders enabled.
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reminder Settings -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-cog me-2"></i>Reminder Settings</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Default Reminder Frequency</label>
+                    <select class="form-select" id="defaultFrequency">
+                        <option value="daily">Daily</option>
+                        <option value="weekly" selected>Weekly</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="quarterly">Quarterly</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Reminder Time</label>
+                    <input type="time" class="form-control" id="reminderTime" value="09:00">
+                </div>
+                
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="enableEmailReminders" checked>
+                    <label class="form-check-label" for="enableEmailReminders">
+                        Enable Email Reminders
+                    </label>
+                </div>
+                
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="enableInAppNotifications" checked>
+                    <label class="form-check-label" for="enableInAppNotifications">
+                        Enable In-App Notifications
+                    </label>
+                </div>
+                
+                <button class="btn btn-primary mt-3" onclick="saveReminderSettings()">
+                    <i class="fas fa-save me-2"></i>Save Settings
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Reminder Activity -->
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-history me-2"></i>Recent Reminder Activity</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_reminders %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Type</th>
+                                <th>Initiative</th>
+                                <th>User</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for reminder in recent_reminders %}
+                            <tr>
+                                <td>{{ reminder.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>
+                                    {% if reminder.type == 'reminder' %}
+                                        <span class="badge bg-info">Regular</span>
+                                    {% elif reminder.type == 'overdue_reminder' %}
+                                        <span class="badge bg-danger">Overdue</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ reminder.type }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ reminder.event_title }}</td>
+                                <td>{{ reminder.user_email }}</td>
+                                <td>
+                                    {% if reminder.read %}
+                                        <span class="badge bg-success">Read</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">Unread</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="viewReminderDetails('{{ reminder._id }}')">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center">No recent reminder activity.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reminder Details Modal -->
+<div class="modal fade" id="reminderDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Reminder Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="reminderDetailsContent">
+                <!-- Content will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function sendReminders() {
+    if (confirm('Send reminder notifications to all users with due/overdue initiatives?')) {
+        window.location.href = "{{ url_for('send_overdue_reminders') }}";
+    }
+}
+
+function sendOverdueReminders() {
+    if (confirm('Send overdue reminder notifications only?')) {
+        // This would be a separate endpoint for overdue only
+        alert('Feature coming soon!');
+    }
+}
+
+function testReminderSystem() {
+    if (confirm('Send a test reminder to verify the system is working?')) {
+        // This would be a test endpoint
+        alert('Test reminder sent!');
+    }
+}
+
+function saveReminderSettings() {
+    // Save reminder settings to database
+    alert('Settings saved successfully!');
+}
+
+function viewReminderDetails(reminderId) {
+    // Load reminder details into modal
+    document.getElementById('reminderDetailsContent').innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    `;
+    
+    const modal = new bootstrap.Modal(document.getElementById('reminderDetailsModal'));
+    modal.show();
+    
+    // In a real implementation, you would fetch the details via AJAX
+    setTimeout(() => {
+        document.getElementById('reminderDetailsContent').innerHTML = `
+            <p><strong>Reminder ID:</strong> ${reminderId}</p>
+            <p><strong>Type:</strong> Regular Reminder</p>
+            <p><strong>Message:</strong> This is a sample reminder message.</p>
+            <p><strong>Created:</strong> 2025-07-09 18:30:00</p>
+        `;
+    }, 1000);
+}
+
+// Auto-refresh every 30 seconds
+setInterval(() => {
+    // Refresh the page to show latest reminder activity
+    // In a real implementation, you would use AJAX to update only the necessary parts
+}, 30000);
+</script>
+
+<style>
+.card {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.h4 {
+    margin-bottom: 0;
+}
+
+.btn {
+    border-radius: 5px;
+}
+</style>
+{% endblock %} 

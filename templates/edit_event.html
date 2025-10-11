@@ -1,0 +1,529 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Initiative - Operation Excellence{% endblock %}
+{% block page_title %}Edit Initiative{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-edit me-2"></i>Edit Initiative</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Initiative Title</label>
+                        <input type="text" class="form-control" id="title" name="title" value="{{ event.title }}" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Initiative Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="4" required>{{ event.description }}</textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="category" class="form-label">Initiative Category</label>
+                            <select class="form-control" id="category" name="category" required>
+                                <option value="">Select Category</option>
+                                <option value="sr_improvement" {% if event.category == 'sr_improvement' %}selected{% endif %}>SR Improvement</option>
+                                <option value="manday_reduction" {% if event.category == 'manday_reduction' %}selected{% endif %}>Manday Reduction</option>
+                                <option value="automation" {% if event.category == 'automation' %}selected{% endif %}>Automation</option>
+                                <option value="admin" {% if event.category == 'admin' %}selected{% endif %}>Admin</option>
+                                <option value="hr" {% if event.category == 'hr' %}selected{% endif %}>HR</option>
+                                <option value="others" {% if event.category == 'others' %}selected{% endif %}>Others</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="division" class="form-label">Division</label>
+                            <div class="input-group">
+                                <select class="form-control" id="division" name="division" required onchange="toggleDivisionOther()">
+                                    <option value="">Select Division</option>
+                                    <option value="DDS" {% if event.division == 'DDS' %}selected{% endif %}>DDS</option>
+                                    <option value="LCMS" {% if event.division == 'LCMS' %}selected{% endif %}>LCMS</option>
+                                    <option value="GRC" {% if event.division == 'GRC' %}selected{% endif %}>GRC</option>
+                                    <option value="CMS" {% if event.division == 'CMS' %}selected{% endif %}>CMS</option>
+                                    <option value="SA" {% if event.division == 'SA' %}selected{% endif %}>SA</option>
+                                    <option value="ESG" {% if event.division == 'ESG' %}selected{% endif %}>ESG</option>
+                                    <option value="FA" {% if event.division == 'FA' %}selected{% endif %}>FA</option>
+                                    {% if custom_divisions %}
+                                        {% for div in custom_divisions %}
+                                            <option value="{{ div.name }}" {% if event.division == div.name %}selected{% endif %}>{{ div.name }}</option>
+                                        {% endfor %}
+                                    {% endif %}
+                                    <option value="others" {% if event.division == 'others' %}selected{% endif %}>Others</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Custom Division Input -->
+                    <div class="mb-3" id="custom_division_field" style="display: none;">
+                        <label for="custom_division" class="form-label">Custom Division Name</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="custom_division" name="custom_division" placeholder="Enter new division name">
+                            <button type="button" class="btn btn-success" onclick="addCustomDivision()">
+                                <i class="fas fa-plus"></i> Add
+                            </button>
+                        </div>
+                        <small class="text-muted">This will be added to the division list for future use</small>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="raised_from" class="form-label">Initiative Raised From</label>
+                            <div class="input-group">
+                                <select class="form-control" id="raised_from" name="raised_from" required onchange="toggleRaisedFromOther()">
+                                <option value="">Select Source</option>
+                                <option value="oe_meetings" {% if event.raised_from == 'oe_meetings' %}selected{% endif %}>OE Meetings</option>
+                                <option value="manager_weekly_meetings" {% if event.raised_from == 'manager_weekly_meetings' %}selected{% endif %}>Manager Weekly Meetings</option>
+                                    {% if custom_raised_from %}
+                                        {% for rf in custom_raised_from %}
+                                            <option value="{{ rf.name }}" {% if event.raised_from == rf.name %}selected{% endif %}>{{ rf.name }}</option>
+                                        {% endfor %}
+                                    {% endif %}
+                                <option value="other" {% if event.raised_from == 'other' %}selected{% endif %}>Other</option>
+                            </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="due_date" class="form-label">Due Date</label>
+                            <input type="date" class="form-control" id="due_date" name="due_date" value="{{ event.due_date.strftime('%Y-%m-%d') if event.due_date else '' }}" required>
+                        </div>
+                    </div>
+
+                    <!-- Custom Raised From Input -->
+                    <div class="mb-3" id="custom_raised_from_field" style="display: none;">
+                        <label for="custom_raised_from" class="form-label">Custom Raised From Source</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="custom_raised_from" name="custom_raised_from" placeholder="Enter new raised from source">
+                            <button type="button" class="btn btn-success" onclick="addCustomRaisedFrom()">
+                                <i class="fas fa-plus"></i> Add
+                            </button>
+                        </div>
+                        <small class="text-muted">This will be added to the raised from list for future use</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="enable_reminders" name="enable_reminders" {% if event.enable_reminders %}checked{% endif %}>
+                            <label class="form-check-label" for="enable_reminders">
+                                <strong><i class="fas fa-bell me-2"></i>Enable Reminders</strong>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div id="reminder_options" style="display: {% if event.enable_reminders %}block{% else %}none{% endif %};" class="mb-3">
+                        <div class="card border-primary">
+                            <div class="card-header bg-primary text-white">
+                                <h6 class="mb-0"><i class="fas fa-clock me-2"></i>Reminder Settings</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label for="reminder_frequency" class="form-label">Reminder Frequency:</label>
+                                    <select class="form-control" id="reminder_frequency" name="reminder_frequency">
+                                        <option value="" {% if not event.reminder_frequency %}selected{% endif %}>Choose Reminder</option>
+                                        <option value="daily" {% if event.reminder_frequency == 'daily' %}selected{% endif %}>Daily</option>
+                                        <option value="weekly" {% if event.reminder_frequency == 'weekly' %}selected{% endif %}>Weekly</option>
+                                        <option value="monthly" {% if event.reminder_frequency == 'monthly' %}selected{% endif %}>Monthly</option>
+                                        <option value="quarterly" {% if event.reminder_frequency == 'quarterly' %}selected{% endif %}>Quarterly</option>
+                                    </select>
+                                    <small class="text-muted">Reminders will be sent to all assigned users based on this frequency</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="document" class="form-label">Document (Optional)</label>
+                        {% if event.document_path %}
+                        <div class="mb-2">
+                            <strong>Current Document:</strong>
+                            {% set filename = event.document_path.split('/')[-1] %}
+                            <a href="{{ url_for('download_file', filename=filename) }}" target="_blank" class="btn btn-sm btn-outline-primary ms-2">
+                                <i class="fas fa-file me-1"></i>{{ filename }}
+                            </a>
+                        </div>
+                        {% endif %}
+                        <input type="file" class="form-control" id="document" name="document" accept=".pdf,.doc,.docx,.txt,.xls,.xlsx">
+                        <small class="text-muted">Upload new document to replace existing one (PDF, DOC, DOCX, TXT, XLS, XLSX)</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="assigned_users" class="form-label">Assign Initiative Leaders</label>
+                        {% if users %}
+                        <div class="selected-users-container mb-2">
+                            <div class="selected-users-display" id="selectedUsersDisplay">
+                                <span class="text-muted">No users selected</span>
+                            </div>
+                        </div>
+                        
+                        <!-- User Selection Dropdown -->
+                        <div class="dropdown">
+                            <button class="btn btn-outline-primary dropdown-toggle w-100" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-users me-2"></i>Select One or More Initiative Leaders
+                            </button>
+                            <ul class="dropdown-menu w-100" aria-labelledby="userDropdown" style="max-height: 300px; overflow-y: auto;">
+                                <!-- Search Bar -->
+                                <li class="px-3 py-2">
+                                    <input type="text" class="form-control form-control-sm" id="userSearch" placeholder="Search users..." onkeyup="filterUsers()">
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                {% for user in users %}
+                                <li class="user-item">
+                                    <a class="dropdown-item user-option" href="#" data-user-email="{{ user.email }}" data-user-name="{{ user.name }}">
+                                        <div class="d-flex align-items-center">
+                                            <input class="form-check-input me-2 user-checkbox" type="checkbox" value="{{ user.email }}" id="user_{{ loop.index }}" {% if user.email in event.assigned_users %}checked{% endif %}>
+                                            <div>
+                                                <div class="fw-bold">{{ user.name }}</div>
+                                                <small class="text-muted">{{ user.designation if user.designation else 'N/A' }}</small><br>
+                                                <small class="text-primary">{{ user.email }}</small>
+                                            </div>
+                                        </div>
+                                    </a>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        
+                        <!-- Hidden select for form submission -->
+                        <select class="form-control" id="assigned_users" name="assigned_users" multiple required style="display: none;">
+                            {% for user in users %}
+                            <option value="{{ user.email }}" {% if user.email in event.assigned_users %}selected{% endif %}>
+                                {{ user.name }} - {{ user.designation if user.designation else 'N/A' }} ({{ user.email }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                        
+                        <small class="text-muted">Tip: You can select multiple users at once. Use the checkboxes to select all leaders for this initiative.</small>
+                        {% else %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            No users available. Please create users first.
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Current Status</label>
+                        <div>
+                            {% if event.status == 'pending' %}
+                            <span class="badge bg-warning">Pending</span>
+                            {% elif event.status == 'in_progress' %}
+                            <span class="badge bg-info">In Progress</span>
+                            {% elif event.status == 'completed' %}
+                            <span class="badge bg-success">Completed</span>
+                            {% else %}
+                            <span class="badge bg-secondary">{{ event.status|title }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                        </a>
+                        <button type="submit" class="btn btn-primary" {% if not users %}disabled{% endif %}>
+                            <i class="fas fa-save me-2"></i>Update Initiative
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.user-option {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.user-option:hover {
+    background-color: #f8f9fa;
+}
+
+.user-option.selected {
+    background-color: #e3f2fd;
+}
+
+.selected-users-display {
+    min-height: 40px;
+    padding: 8px 12px;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    background-color: #f8f9fa;
+}
+
+.selected-user-badge {
+    display: inline-block;
+    background: #667eea;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    margin: 2px;
+    font-size: 12px;
+}
+
+.selected-user-badge .remove-user {
+    margin-left: 5px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.dropdown-menu {
+    border: 1px solid #dee2e6;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.dropdown-item {
+    padding: 10px 15px;
+    border-bottom: 1px solid #f8f9fa;
+}
+
+.dropdown-item:last-child {
+    border-bottom: none;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const userCheckboxes = document.querySelectorAll('.user-checkbox');
+    const selectedUsersDisplay = document.getElementById('selectedUsersDisplay');
+    const hiddenSelect = document.getElementById('assigned_users');
+    const userOptions = document.querySelectorAll('.user-option');
+    const dropdownButton = document.getElementById('userDropdown');
+    
+    // Initialize selected users display
+    updateSelectedUsers();
+    updateOptionAppearance();
+    
+    // Handle checkbox changes
+    userCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function(e) {
+            e.stopPropagation(); // Prevent dropdown from closing
+            updateSelectedUsers();
+            updateOptionAppearance();
+        });
+    });
+    
+    // Handle option clicks
+    userOptions.forEach(option => {
+        option.addEventListener('click', function(e) {
+            e.preventDefault();
+            const checkbox = this.querySelector('.user-checkbox');
+            checkbox.checked = !checkbox.checked;
+            updateSelectedUsers();
+            updateOptionAppearance();
+        });
+    });
+    
+    function updateSelectedUsers() {
+        const selectedEmails = Array.from(userCheckboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.value);
+        
+        // Update hidden select
+        Array.from(hiddenSelect.options).forEach(option => {
+            option.selected = selectedEmails.includes(option.value);
+        });
+        
+        // Update display
+        if (selectedEmails.length === 0) {
+            selectedUsersDisplay.innerHTML = '<span class="text-muted">No users selected</span>';
+        } else {
+            const badges = selectedEmails.map(email => {
+                const userOption = document.querySelector(`[data-user-email="${email}"]`);
+                const userName = userOption ? userOption.getAttribute('data-user-name') : email;
+                return `<span class="selected-user-badge">${userName} <span class="remove-user" onclick="removeUser('${email}')">&times;</span></span>`;
+            }).join('');
+            selectedUsersDisplay.innerHTML = badges;
+        }
+    }
+    
+    function updateOptionAppearance() {
+        userOptions.forEach(option => {
+            const checkbox = option.querySelector('.user-checkbox');
+            if (checkbox.checked) {
+                option.classList.add('selected');
+            } else {
+                option.classList.remove('selected');
+            }
+        });
+    }
+    
+    // Make removeUser function global
+    window.removeUser = function(email) {
+        const checkbox = document.querySelector(`[data-user-email="${email}"] .user-checkbox`);
+        if (checkbox) {
+            checkbox.checked = false;
+            updateSelectedUsers();
+            updateOptionAppearance();
+        }
+    };
+    
+    // Search functionality
+    window.filterUsers = function() {
+        const searchTerm = document.getElementById('userSearch').value.toLowerCase();
+        const userItems = document.querySelectorAll('.user-item');
+        
+        userItems.forEach(item => {
+            const userName = item.querySelector('.fw-bold').textContent.toLowerCase();
+            const userEmail = item.querySelector('.text-primary').textContent.toLowerCase();
+            const userDesignation = item.querySelector('.text-muted').textContent.toLowerCase();
+            
+            if (userName.includes(searchTerm) || userEmail.includes(searchTerm) || userDesignation.includes(searchTerm)) {
+                item.style.display = '';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    };
+    
+    // Handle reminder checkbox toggle
+    const enableRemindersCheckbox = document.getElementById('enable_reminders');
+    const reminderOptions = document.getElementById('reminder_options');
+    
+    enableRemindersCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            reminderOptions.style.display = 'block';
+        } else {
+            reminderOptions.style.display = 'none';
+        }
+    });
+    
+    // Initialize custom field toggles on page load
+    toggleDivisionOther();
+    toggleRaisedFromOther();
+});
+
+// Handle Division dropdown change
+function toggleDivisionOther() {
+    const divisionSelect = document.getElementById('division');
+    const customDivisionField = document.getElementById('custom_division_field');
+    const customDivisionInput = document.getElementById('custom_division');
+
+    if (divisionSelect.value === 'others') {
+        customDivisionField.style.display = 'block';
+        customDivisionInput.setAttribute('required', 'required');
+    } else {
+        customDivisionField.style.display = 'none';
+        customDivisionInput.removeAttribute('required');
+        customDivisionInput.value = ''; // Clear custom division if not selected
+    }
+}
+
+// Handle Raised From dropdown change
+function toggleRaisedFromOther() {
+    const raisedFromSelect = document.getElementById('raised_from');
+    const customRaisedFromField = document.getElementById('custom_raised_from_field');
+    const customRaisedFromInput = document.getElementById('custom_raised_from');
+
+    if (raisedFromSelect.value === 'other') {
+        customRaisedFromField.style.display = 'block';
+        customRaisedFromInput.setAttribute('required', 'required');
+    } else {
+        customRaisedFromField.style.display = 'none';
+        customRaisedFromInput.removeAttribute('required');
+        customRaisedFromInput.value = ''; // Clear custom raised from if not selected
+    }
+}
+
+// Add custom division function
+function addCustomDivision() {
+    const divisionName = document.getElementById('custom_division').value.trim();
+    
+    if (!divisionName) {
+        alert('Please enter a division name');
+        return;
+    }
+    
+    fetch('/admin/add_custom_division', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            division_name: divisionName
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Add the new division to the dropdown
+            const divisionSelect = document.getElementById('division');
+            const newOption = document.createElement('option');
+            newOption.value = divisionName;
+            newOption.text = divisionName;
+            newOption.selected = true;
+            
+            // Insert before "Others" option
+            const othersOption = divisionSelect.querySelector('option[value="others"]');
+            divisionSelect.insertBefore(newOption, othersOption);
+            
+            // Hide custom field and clear input
+            document.getElementById('custom_division_field').style.display = 'none';
+            document.getElementById('custom_division').removeAttribute('required');
+            document.getElementById('custom_division').value = '';
+            
+            alert('Division added successfully and selected!');
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while adding the division');
+    });
+}
+
+// Add custom raised from function
+function addCustomRaisedFrom() {
+    const raisedFromName = document.getElementById('custom_raised_from').value.trim();
+    
+    if (!raisedFromName) {
+        alert('Please enter a raised from source name');
+        return;
+    }
+    
+    fetch('/admin/add_custom_raised_from', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            raised_from_name: raisedFromName
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Add the new raised from to the dropdown
+            const raisedFromSelect = document.getElementById('raised_from');
+            const newOption = document.createElement('option');
+            newOption.value = raisedFromName;
+            newOption.text = raisedFromName;
+            newOption.selected = true;
+            
+            // Insert before "Other" option
+            const otherOption = raisedFromSelect.querySelector('option[value="other"]');
+            raisedFromSelect.insertBefore(newOption, otherOption);
+            
+            // Hide custom field and clear input
+            document.getElementById('custom_raised_from_field').style.display = 'none';
+            document.getElementById('custom_raised_from').removeAttribute('required');
+            document.getElementById('custom_raised_from').value = '';
+            
+            alert('Raised from source added successfully and selected!');
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while adding the raised from source');
+    });
+}
+</script>
+{% endblock %} 

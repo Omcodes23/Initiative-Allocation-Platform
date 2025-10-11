@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}Custom Divisions - Operation Excellence{% endblock %}
+{% block page_title %}Custom Division Management{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-sitemap me-2"></i>Custom Division Management</h5>
+            </div>
+            <div class="card-body">
+                {% if custom_divisions %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Division Name</th>
+                                <th>Created Date</th>
+                                <th>Usage Count</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for division in custom_divisions %}
+                            <tr>
+                                <td>
+                                    <span class="badge bg-info">{{ division.name }}</span>
+                                </td>
+                                <td>{{ division.created_at.strftime('%Y-%m-%d') if division.created_at else 'N/A' }}</td>
+                                <td>
+                                    {% if division.usage_count > 0 %}
+                                        <span class="badge bg-success">{{ division.usage_count }} event(s)</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Not used</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="editDivision('{{ division._id }}', '{{ division.name }}')">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteDivision('{{ division._id }}', '{{ division.name }}', {{ division.usage_count }})">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-sitemap fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No Custom Divisions</h5>
+                    <p class="text-muted">No custom divisions have been created yet.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Division Modal -->
+<div class="modal fade" id="editDivisionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Division</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editDivisionForm">
+                    <div class="mb-3">
+                        <label for="editDivisionName" class="form-label">Division Name</label>
+                        <input type="text" class="form-control" id="editDivisionName" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="updateDivision()">Update Division</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentDivisionId = null;
+
+function editDivision(divisionId, divisionName) {
+    currentDivisionId = divisionId;
+    document.getElementById('editDivisionName').value = divisionName;
+    new bootstrap.Modal(document.getElementById('editDivisionModal')).show();
+}
+
+function updateDivision() {
+    const divisionName = document.getElementById('editDivisionName').value.trim();
+    
+    if (!divisionName) {
+        alert('Please enter a division name');
+        return;
+    }
+    
+    fetch(`/admin/edit_custom_division/${currentDivisionId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            division_name: divisionName
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            bootstrap.Modal.getInstance(document.getElementById('editDivisionModal')).hide();
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while updating the division');
+    });
+}
+
+function deleteDivision(divisionId, divisionName, usageCount) {
+    let message = `Are you sure you want to delete division "${divisionName}"?`;
+    
+    if (usageCount > 0) {
+        message += `\n\nWarning: This division is currently used by ${usageCount} event(s) and cannot be deleted.`;
+        alert(message);
+        return;
+    }
+    
+    if (confirm(message)) {
+        fetch(`/admin/delete_custom_division/${divisionId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while deleting the division');
+        });
+    }
+}
+</script>
+{% endblock %} 

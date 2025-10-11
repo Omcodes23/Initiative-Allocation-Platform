@@ -1,0 +1,42 @@
+#!/usr/bin/env python3
+"""
+Test script to verify password hashing functionality
+"""
+
+from werkzeug.security import generate_password_hash, check_password_hash
+
+def test_password_hashing():
+    """Test password hashing and verification"""
+    test_password = "test123456"
+    
+    print("=== Password Hashing Test ===")
+    print(f"Original password: {test_password}")
+    
+    # Generate hash
+    hashed = generate_password_hash(test_password)
+    print(f"Generated hash: {hashed}")
+    
+    # Test verification
+    verification_result = check_password_hash(hashed, test_password)
+    print(f"Verification result: {verification_result}")
+    
+    # Test with wrong password
+    wrong_password = "wrongpassword"
+    wrong_verification = check_password_hash(hashed, wrong_password)
+    print(f"Wrong password verification: {wrong_verification}")
+    
+    # Test with different hash method
+    hashed_sha256 = generate_password_hash(test_password, method='pbkdf2:sha256')
+    print(f"SHA256 hash: {hashed_sha256}")
+    sha256_verification = check_password_hash(hashed_sha256, test_password)
+    print(f"SHA256 verification: {sha256_verification}")
+    
+    print("=== Test Complete ===")
+    return verification_result and sha256_verification
+
+if __name__ == "__main__":
+    success = test_password_hashing()
+    if success:
+        print("✅ All password hashing tests passed!")
+    else:
+        print("❌ Some password hashing tests failed!") 

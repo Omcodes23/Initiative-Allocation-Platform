@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Operation Excellence{% endblock %}
+
+<style>
+    .login-title {
+        white-space: nowrap;
+        font-size: 1.75rem;
+        line-height: 1.2;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    @media (max-width: 576px) {
+        .login-title {
+            font-size: 1.5rem;
+        }
+    }
+    
+    @media (max-width: 400px) {
+        .login-title {
+            font-size: 1.25rem;
+        }
+    }
+</style>
+
+{% block auth_content %}
+<div class="container">
+    <div class="row justify-content-center align-items-center min-vh-100">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-lg">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <h2 class="fw-bold text-primary login-title">
+                            <i class="fas fa-tasks me-2"></i>Operation Excellence
+                        </h2>
+                        {% if show_password_modal and user_logged_in %}
+                        <p class="text-muted">Change Your Temporary Password</p>
+                        {% else %}
+                        <p class="text-muted">Sign in to your account</p>
+                        {% endif %}
+                    </div>
+
+                    {% with messages = get_flashed_messages() %}
+                        {% if messages %}
+                            {% for message in messages %}
+                                <div class="alert alert-info alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    {% if error_message %}
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        {{ error_message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endif %}
+
+                    {% if show_password_modal and user_logged_in %}
+                    <!-- Password Change Form for Temporary Passwords -->
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Security Notice:</strong> You are using a temporary password. Please change it to a secure password to continue.
+                    </div>
+                    
+                    <form method="POST" action="{{ url_for('change_password') }}" id="changePasswordForm">
+                        <div class="mb-3">
+                            <label for="current_password" class="form-label">Current Temporary Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-lock"></i>
+                                </span>
+                                <input type="password" class="form-control" id="current_password" name="current_password" required>
+                            </div>
+                            <small class="text-muted">Enter your current temporary password</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="new_password" class="form-label">New Secure Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-key"></i>
+                                </span>
+                                <input type="password" class="form-control" id="new_password" name="new_password" required minlength="8">
+                            </div>
+                            <small class="text-muted">Choose a strong password (minimum 8 characters)</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="confirm_password" class="form-label">Confirm New Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-key"></i>
+                                </span>
+                                <input type="password" class="form-control" id="confirm_password" name="confirm_password" required minlength="8">
+                            </div>
+                            <small class="text-muted">Re-enter your new password</small>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Password Requirements:</strong>
+                            <ul class="mb-0 mt-2">
+                                <li>At least 8 characters long</li>
+                                <li>Include uppercase and lowercase letters</li>
+                                <li>Include numbers and special characters</li>
+                                <li>Cannot be the same as your temporary password</li>
+                            </ul>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100 mb-3">
+                            <i class="fas fa-save me-2"></i>Change Password & Continue
+                        </button>
+                    </form>
+                    
+                    {% else %}
+                    <!-- Regular Login Form -->
+                    <form method="POST" id="loginForm">
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email Address</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-envelope"></i>
+                                </span>
+                                <input type="email" class="form-control" id="email" name="email" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="password" class="form-label">Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-lock"></i>
+                                </span>
+                                <input type="password" class="form-control" id="password" name="password" required>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 mb-3">
+                            <i class="fas fa-sign-in-alt me-2"></i>Sign In
+                        </button>
+                    </form>
+                    
+                    <div class="text-center">
+                        <a href="{{ url_for('forgot_password') }}" class="text-decoration-none">
+                            <i class="fas fa-question-circle me-1"></i>
+                            Forgot Password?
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Password validation for change password form
+document.addEventListener('DOMContentLoaded', function() {
+    const changePasswordForm = document.getElementById('changePasswordForm');
+    if (changePasswordForm) {
+        function validatePasswords() {
+            const currentPass = document.getElementById('current_password');
+            const newPass = document.getElementById('new_password');
+            const confirmPass = document.getElementById('confirm_password');
+            
+            // Check if new password matches current password
+            if (currentPass && newPass && currentPass.value === newPass.value) {
+                newPass.setCustomValidity('New password cannot be the same as current password');
+                return;
+            } else if (newPass) {
+                newPass.setCustomValidity('');
+            }
+            
+            // Check if passwords match
+            if (newPass && confirmPass) {
+                if (newPass.value !== confirmPass.value) {
+                    confirmPass.setCustomValidity('Passwords do not match');
+                } else {
+                    confirmPass.setCustomValidity('');
+                }
+            }
+            
+            // Check password strength
+            if (newPass && newPass.value.length < 8) {
+                newPass.setCustomValidity('Password must be at least 8 characters long');
+            } else if (newPass) {
+                newPass.setCustomValidity('');
+            }
+        }
+        
+        const currentPassInput = document.getElementById('current_password');
+        const newPassInput = document.getElementById('new_password');
+        const confirmPassInput = document.getElementById('confirm_password');
+        
+        if (currentPassInput) {
+            currentPassInput.addEventListener('input', validatePasswords);
+        }
+        if (newPassInput) {
+            newPassInput.addEventListener('input', validatePasswords);
+        }
+        if (confirmPassInput) {
+            confirmPassInput.addEventListener('input', validatePasswords);
+        }
+    }
+});
+</script>
+{% endblock %} 

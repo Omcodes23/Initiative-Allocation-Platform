@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+
+{% block title %}Designation Management - Operation Excellence{% endblock %}
+{% block page_title %}Designation Management{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-plus me-2"></i>Add New Designation</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('add_designation') }}">
+                    <div class="mb-3">
+                        <label for="designation_name" class="form-label">Designation Name</label>
+                        <input type="text" class="form-control" id="designation_name" name="designation_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="designation_description" class="form-label">Description (Optional)</label>
+                        <textarea class="form-control" id="designation_description" name="designation_description" rows="3"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Add Designation
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-list me-2"></i>Current Designations</h5>
+            </div>
+            <div class="card-body">
+                {% if designations %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Designation</th>
+                                <th>Description</th>
+                                <th>Users</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for designation in designations %}
+                            <tr>
+                                <td>{{ designation.name }}</td>
+                                <td>{{ designation.description or 'N/A' }}</td>
+                                <td>
+                                    <span class="badge bg-primary">{{ designation.user_count }}</span>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary me-1" 
+                                            onclick="editDesignationFromData(this)" 
+                                            data-id="{{ designation._id }}" 
+                                            data-name="{{ designation.name }}" 
+                                            data-description="{{ designation.description or '' }}">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" onclick="deleteDesignation('{{ designation._id }}')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-tags fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No designations found</h5>
+                    <p class="text-muted">Add your first designation above.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Designation Modal - Ultra-Stable System -->
+<div class="ultra-modal" id="editDesignationModal">
+    <div class="ultra-modal-content">
+        <div class="ultra-modal-header">
+            <h5 class="ultra-modal-title">Edit Designation</h5>
+            <button type="button" class="ultra-modal-close" data-modal-id="editDesignationModal">&times;</button>
+        </div>
+        <div class="ultra-modal-body">
+            <form id="editDesignationForm">
+                <input type="hidden" id="edit_designation_id" name="designation_id">
+                <div class="mb-3">
+                    <label for="edit_designation_name" class="form-label">Designation Name</label>
+                    <input type="text" class="form-control" id="edit_designation_name" name="designation_name" required>
+                </div>
+                <div class="mb-3">
+                    <label for="edit_designation_description" class="form-label">Description (Optional)</label>
+                    <textarea class="form-control" id="edit_designation_description" name="designation_description" rows="3"></textarea>
+                </div>
+            </form>
+        </div>
+        <div class="ultra-modal-footer">
+            <button type="button" class="btn btn-secondary ultra-modal-close" data-modal-id="editDesignationModal">Cancel</button>
+            <button type="button" class="btn btn-primary" onclick="updateDesignation()">Update Designation</button>
+        </div>
+    </div>
+</div>
+
+<script>
+function deleteDesignation(designationId) {
+    if (confirm('Are you sure you want to delete this designation? This will affect users with this designation.')) {
+        fetch(`/admin/delete_designation/${designationId}`, {
+            method: 'DELETE',
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error deleting designation: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting designation');
+        });
+    }
+}
+
+function editDesignationFromData(button) {
+    const designationData = {
+        id: button.getAttribute('data-id'),
+        name: button.getAttribute('data-name'),
+        description: button.getAttribute('data-description')
+    };
+    
+    document.getElementById('edit_designation_id').value = designationData.id;
+    document.getElementById('edit_designation_name').value = designationData.name || '';
+    document.getElementById('edit_designation_description').value = designationData.description || '';
+    
+    // Show modal using ultra-modal system
+    showModal('editDesignationModal');
+}
+
+function updateDesignation() {
+    const designationId = document.getElementById('edit_designation_id').value;
+    const name = document.getElementById('edit_designation_name').value;
+    const description = document.getElementById('edit_designation_description').value;
+    
+    console.log('Updating designation:', designationId, name, description);
+    
+    if (!name.trim()) {
+        alert('Designation name is required');
+        return;
+    }
+    
+    fetch(`/admin/edit_designation/${designationId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            designation_name: name.trim(),
+            designation_description: description.trim()
+        })
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log('Response data:', data);
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error updating designation: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error updating designation');
+    });
+}
+
+// Ultra-Modal System Functions
+function showModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+    
+    // Move modal to document body if it's not already there
+    if (modal.parentElement !== document.body) {
+        document.body.appendChild(modal);
+    }
+    
+    // Disable pointer events on everything except modal
+    document.body.classList.add('ultra-modal-open');
+    
+    // Force specific positioning to break out of parent constraints
+    modal.style.position = 'fixed';
+    modal.style.top = '0';
+    modal.style.left = '0';
+    modal.style.right = '0';
+    modal.style.bottom = '0';
+    modal.style.width = '100vw';
+    modal.style.height = '100vh';
+    modal.style.margin = '0';
+    modal.style.padding = '0';
+    modal.style.transform = 'none';
+    modal.style.zIndex = '999999';
+    
+    // Show modal immediately without any transitions
+    modal.classList.add('show');
+    
+    // Force immediate render to prevent flickering
+    modal.offsetHeight;
+}
+
+function hideModal(modal) {
+    if (!modal) return;
+    
+    // Hide modal immediately
+    modal.classList.remove('show');
+    
+    // Re-enable body interactions
+    document.body.classList.remove('ultra-modal-open');
+}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Move all modals to document body to ensure they're not constrained
+    const modals = document.querySelectorAll('.ultra-modal');
+    modals.forEach(modal => {
+        if (modal.parentElement !== document.body) {
+            document.body.appendChild(modal);
+        }
+    });
+    
+    // Single click handler for everything
+    document.addEventListener('click', function(e) {
+        // Close button
+        if (e.target.closest('.ultra-modal-close')) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const modal = e.target.closest('.ultra-modal');
+            if (modal) {
+                hideModal(modal);
+            }
+            return false;
+        }
+        
+        // Backdrop click
+        if (e.target.classList.contains('ultra-modal')) {
+            e.preventDefault();
+            e.stopPropagation();
+            hideModal(e.target);
+            return false;
+        }
+    }, true);
+    
+    // Escape key handler
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            const openModal = document.querySelector('.ultra-modal.show');
+            if (openModal) {
+                e.preventDefault();
+                hideModal(openModal);
+            }
+        }
+    }, true);
+});
+</script>
+{% endblock %} 

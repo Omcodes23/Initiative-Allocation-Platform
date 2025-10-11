@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}Custom Raised From - Operation Excellence{% endblock %}
+{% block page_title %}Custom Raised From Management{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-source-commit me-2"></i>Custom Raised From Management</h5>
+            </div>
+            <div class="card-body">
+                {% if custom_raised_from %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Source Name</th>
+                                <th>Created Date</th>
+                                <th>Usage Count</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for source in custom_raised_from %}
+                            <tr>
+                                <td>
+                                    <span class="badge bg-success">{{ source.name }}</span>
+                                </td>
+                                <td>{{ source.created_at.strftime('%Y-%m-%d') if source.created_at else 'N/A' }}</td>
+                                <td>
+                                    {% if source.usage_count > 0 %}
+                                        <span class="badge bg-success">{{ source.usage_count }} event(s)</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Not used</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="editSource('{{ source._id }}', '{{ source.name }}')">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteSource('{{ source._id }}', '{{ source.name }}', {{ source.usage_count }})">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-source-commit fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No Custom Sources</h5>
+                    <p class="text-muted">No custom raised from sources have been created yet.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Source Modal -->
+<div class="modal fade" id="editSourceModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Raised From Source</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editSourceForm">
+                    <div class="mb-3">
+                        <label for="editSourceName" class="form-label">Source Name</label>
+                        <input type="text" class="form-control" id="editSourceName" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="updateSource()">Update Source</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentSourceId = null;
+
+function editSource(sourceId, sourceName) {
+    currentSourceId = sourceId;
+    document.getElementById('editSourceName').value = sourceName;
+    new bootstrap.Modal(document.getElementById('editSourceModal')).show();
+}
+
+function updateSource() {
+    const sourceName = document.getElementById('editSourceName').value.trim();
+    
+    if (!sourceName) {
+        alert('Please enter a source name');
+        return;
+    }
+    
+    fetch(`/admin/edit_custom_raised_from/${currentSourceId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            raised_from_name: sourceName
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            bootstrap.Modal.getInstance(document.getElementById('editSourceModal')).hide();
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while updating the source');
+    });
+}
+
+function deleteSource(sourceId, sourceName, usageCount) {
+    let message = `Are you sure you want to delete raised from source "${sourceName}"?`;
+    
+    if (usageCount > 0) {
+        message += `\n\nWarning: This source is currently used by ${usageCount} event(s) and cannot be deleted.`;
+        alert(message);
+        return;
+    }
+    
+    if (confirm(message)) {
+        fetch(`/admin/delete_custom_raised_from/${sourceId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while deleting the source');
+        });
+    }
+}
+</script>
+{% endblock %} 
