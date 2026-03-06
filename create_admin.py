@@ -7,9 +7,6 @@ import os
 from pymongo import MongoClient
 from werkzeug.security import generate_password_hash
 from datetime import datetime
-from dotenv import load_dotenv
-
-load_dotenv()
 
 def create_admin_user():
     try:
@@ -61,4 +58,4 @@ if __name__ == '__main__':
     print("Creating Admin User")
     print("=" * 50)
     create_admin_user()
-    print("=" * 50) 
+    print("=" * 50)
